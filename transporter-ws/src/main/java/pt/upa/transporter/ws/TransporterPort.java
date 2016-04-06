@@ -14,6 +14,8 @@ import javax.jws.WebService;
 
 public class TransporterPort implements TransporterPortType {
 
+	private List<JobView> jobs = new ArrayList<JobView>();
+
 	public String ping(String name){
 		return "string";
 	}
@@ -34,11 +36,10 @@ public class TransporterPort implements TransporterPortType {
 	}
 
 	public List<JobView> listJobs(){
-		List<JobView> j = new ArrayList<JobView>();
-		return j;
+		return jobs;
 	}
 
 	public void clearJobs(){
-
+		jobs = new ArrayList<JobView>();
 	}
 }

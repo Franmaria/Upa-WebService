@@ -131,6 +131,7 @@ public class BrokerPort implements BrokerPortType {
     		trans.decideJob(job.getId(), true);
     		job.setState(TransportStateView.BOOKED);
     		return job.getId();
+    	
     	} catch(BadJobFault_Exception e) {
     		job.setState(TransportStateView.FAILED);
     		System.out.printf("Caught exception: %s%n", e);
@@ -148,19 +149,25 @@ public class BrokerPort implements BrokerPortType {
   public TransportView viewTransport(String id) throws UnknownTransportFault_Exception {
 	TransportView y;
 	TransporterClient trans;
+	String [] ids = id.split("/");
+	String transporterName = "UpaTransporter" + ids[0];
+	id = ids[1];
+	
 	for(int x = 0; x < contratos.size(); x++) {
 		y = contratos.get(x);
-		if (id == y.getId()){
-			try {
-				trans = new TransporterClient(uddiNaming.lookup(y.getTransporterCompany()));
-				String v = trans.jobStatus(id).getJobState().value(); 
-				y.setState(TransportStateView.fromValue(v));
-				
-				return y;
-				
-			} catch(JAXRException e){
-				System.out.printf("Caught exception: %s%n", e);
-				e.printStackTrace();
+		if(transporterName.equals(y.getTransporterCompany())) {	
+			if (id.equals(y.getId())){
+				try {
+					trans = new TransporterClient(uddiNaming.lookup(y.getTransporterCompany()));
+					String v = trans.jobStatus(id).getJobState().value(); 
+					y.setState(TransportStateView.fromValue(v));
+					
+					return y;
+					
+				} catch(JAXRException e){
+					System.out.printf("Caught exception: %s%n", e);
+					e.printStackTrace();
+				}
 			}
 		}
 	}

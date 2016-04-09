@@ -30,15 +30,52 @@ public class TransporterPort implements TransporterPortType {
 
 	public JobView requestJob( String origin, String destination, int price) throws BadLocationFault_Exception, BadPriceFault_Exception {
 		int paridade = transportNumber % 2;
+		boolean ori, dest;
+		int priceOffer;
 		
-		if (checkRegion(paridade, origin, 0) && checkRegion(paridade, destination, 0)) {
-			JobView n = new JobView();
-			jobs.add(n);
-		} else if (!checkRegion(paridade, origin, 1) || !checkRegion(paridade, destination, 1) ){
-			throw BadLocationFault_Exception();
+		if(price < 0) {
+			BadPriceFault p = new BadPriceFault();
+			p.setPrice(price);
+			throw new BadPriceFault_Exception("Preco incorreto",p);
 		}
 		
-		return null;
+		if (!checkRegion(paridade, origin, 0) || !checkRegion(paridade, destination, 0)) {
+			ori = checkRegion(paridade, origin, 1);
+			dest = checkRegion(paridade, destination, 1);
+			
+			BadLocationFault f = new BadLocationFault();
+			
+			if(!ori || !dest){
+				if (!ori && !dest){
+					f.setLocation(origin + " " + destination);
+				} else if(!dest) {
+					f.setLocation(destination);
+				} else {
+					f.setLocation(origin);
+				}
+				
+				throw new BadLocationFault_Exception("Localizacao nao existe",f);
+			}
+			return null;
+		}
+		
+		if(price < 100) {
+			priceOffer = getprice(paridade, price);
+		} else{
+			return null;
+		}
+		
+		JobView job = new JobView();
+		job.setCompanyName("UpaTransporter" + Integer.toString(transportNumber));
+		job.setJobIdentifier(Integer.toString(transportNumber) + "/" + Integer.toString(contratNumber));
+		contratNumber++;
+		job.setJobOrigin(origin);
+		job.setJobDestination(destination);
+		job.setJobPrice(priceOffer);
+		job.setJobState(JobStateView.PROPOSED);
+		jobs.add(job);
+		
+		return job;
 	}
 
 	public JobView decideJob(String id, boolean accept) throws BadJobFault_Exception {
@@ -47,8 +84,14 @@ public class TransporterPort implements TransporterPortType {
 	}
 
 	public JobView jobStatus(String id){
-		JobView n = new JobView();
-		return n;
+		JobView j; 
+		for(int x = 0; x < jobs.size(); x++) {
+			j = jobs.get(x);
+			if(j.getJobIdentifier().equals(id)) {
+				return j;
+			}
+		}
+		return null; 
 	}
 
 	public List<JobView> listJobs(){
@@ -90,5 +133,44 @@ public class TransporterPort implements TransporterPortType {
 		}
 		
 		return false;
+	}
+	
+	private int getprice(int paridade, int price) {
+		int priceOffer = price;
+		Random rand = new Random();
+			
+		if (price <= 10){
+			while(priceOffer < price){
+				priceOffer = rand.nextInt(price) + 1;
+			}
+			
+			return priceOffer;
+		}
+		
+		if(paridade == 0) {
+			if (price % 2 == 0) {
+				while(priceOffer < price){
+					priceOffer = rand.nextInt(price) + 1;
+				}
+			} else {
+				while(priceOffer > price){
+					priceOffer = rand.nextInt(price) + 1;
+				}
+			}
+		}
+		
+		if(paridade == 1) {
+			if (price % 2 == 1) {
+				while(priceOffer < price){
+					priceOffer = rand.nextInt(price) + 1;
+				}
+			} else {
+				while(priceOffer > price){
+					priceOffer = rand.nextInt(price) + 1;
+				}
+			}
+		}	
+		
+		return priceOffer; 
 	}
 }

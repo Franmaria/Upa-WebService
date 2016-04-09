@@ -1,12 +1,13 @@
 package pt.upa.broker.ws;
 
-import static javax.xml.ws.BindingProvider.ENDPOINT_ADDRESS_PROPERTY;
 
 import java.util.*;
 import javax.jws.WebService;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
+import pt.upa.transporter.ws.*;
+import pt.upa.transporter.ws.cli.*;
+
 import javax.xml.registry.*;
-import javax.xml.ws.*;
 
 @WebService(
     endpointInterface="pt.upa.broker.ws.BrokerPortType",
@@ -35,27 +36,16 @@ public class BrokerPort implements BrokerPortType {
   }
 
   public String ping(String name) {
-    String url;
-    try {
-      url = uddiNaming.lookup(name);
-      if( url != null) {
-          return (name + " found");
-        } else {
-          return (name + " not found");
-        }
-    } catch(JAXRException e){
-      System.out.printf("Caught exception: %s%n", e);
-      e.printStackTrace();
-      return "Error making contact";
-    }
+	  return name; 
   }
 
 
   public String requestTransport(String origin, String destination, int price) throws InvalidPriceFault_Exception, UnavailableTransportFault_Exception,
 								UnavailableTransportPriceFault_Exception, UnknownLocationFault_Exception {
-    boolean orig, dest;
+    boolean orig = false , dest = false;
     int x;
-    TransporterPortType trans;
+    TransporterClient trans;
+    String url = null;
     
     for(x = 0; x < cidades.size(); x++) {
         if(origin == cidades.get(x)) {
@@ -94,22 +84,32 @@ public class BrokerPort implements BrokerPortType {
     job.setState(TransportStateView.REQUESTED);
     job.setDestination(destination);
     job.setOrigin(origin);
-    job.setId("1111312321"); // o que é suposto por no ID?
     contratos.add(job);
     
     try{
-    	List<String> urls = new ArrayList<String>(uddiNaming.list("UpaTransporter"));
+    	List<String> urls = new ArrayList<String>(uddiNaming.list("UpaTransporter%"));
     	
     	for(x = 0;x < urls.size(); x++){
-    		trans = binding(urls.get(x));
+    		trans = new TransporterClient(urls.get(x));
     		
     		try{
     			JobView s = trans.requestJob(origin, destination, price);
     			if (s.getJobPrice() < job.getPrice()) {
+    				/* Diz que o melhor trabalho anterior nao vai ser aceite*/
+    				if (url != null) {
+    					trans = new TransporterClient(url);
+    					trans.decideJob(s.getJobIdentifier(), false);
+    				}
+    				
     				job.setPrice(s.getJobPrice());
     				job.setId(s.getJobIdentifier());
     				job.setTransporterCompany(s.getCompanyName());
+    				url = urls.get(x);
+    				
+    			} else {
+    				trans.decideJob(s.getJobIdentifier(), false);
     			}
+    			
     		} catch(Exception e){
     			System.out.printf("Caught exception: %s%n", e);
     			e.printStackTrace();
@@ -119,29 +119,45 @@ public class BrokerPort implements BrokerPortType {
     	System.out.printf("Caught exception: %s%n", e);
 		e.printStackTrace();
     }
-    
-    if(job.getTransporterCompany() != null){
-    	return job.getId();
+ 
+    if(job.getTransporterCompany() != null) {
+    	
+    	trans = new TransporterClient(url);
+    	
+    	try {
+    		trans.decideJob(job.getId(), true);
+    		job.setState(TransportStateView.BOOKED);
+    		return job.getId();
+    	} catch(BadJobFault_Exception e) {
+    		job.setState(TransportStateView.FAILED);
+    		System.out.printf("Caught exception: %s%n", e);
+    		e.printStackTrace();
+    		return null;
+        }
+    	
     } else{
+    	
+    	job.setState(TransportStateView.FAILED);
     	return null; 
     }
   }
 
   public TransportView viewTransport(String id) throws UnknownTransportFault_Exception {
 	TransportView y;
-	TransporterPortType trans;
+	TransporterClient trans;
 	for(int x = 0; x < contratos.size(); x++) {
 		y = contratos.get(x);
 		if (id == y.getId()){
 			try {
-				trans = binding(uddiNaming.lookup(y.getTransporterCompany()));
-				y.setState(trans.jobStatus(id).getJobState());
+				trans = new TransporterClient(uddiNaming.lookup(y.getTransporterCompany()));
+				String v = trans.jobStatus(id).getJobState().value(); 
+				y.setState(TransportStateView.fromValue(v));
 				
 				return y;
 				
 			} catch(JAXRException e){
 				System.out.printf("Caught exception: %s%n", e);
-					e.printStackTrace();
+				e.printStackTrace();
 			}
 		}
 	}
@@ -157,15 +173,5 @@ public class BrokerPort implements BrokerPortType {
 
   public void clearTransports(){
 	contratos = new ArrayList<TransportView>();
-  }
-  
-  private TransporterPortType binding(String url) {
-	  TransporterService service = new TransporterService(); 
-	  TransporterPortType port = service.getTransporterPort();
-	  BindingProvider bindingProvider = (BindingProvider) port;
-	  Map<String, Object> requestContext = bindingProvider.getRequestContext();
-	  requestContext.put(ENDPOINT_ADDRESS_PROPERTY, url);
-	  
-	  return port; 
   }
 }

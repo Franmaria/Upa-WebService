@@ -48,11 +48,11 @@ public class BrokerPort implements BrokerPortType {
     String url = null;
     
     for(x = 0; x < cidades.size(); x++) {
-        if(origin == cidades.get(x)) {
+        if(origin.equals(cidades.get(x))) {
             orig = true;
         }
 
-        if(destination == cidades.get(x)) {
+        if(destination.equals(cidades.get(x))) {
             dest = true;
         }
 
@@ -94,23 +94,26 @@ public class BrokerPort implements BrokerPortType {
     		
     		try{
     			JobView s = trans.requestJob(origin, destination, price);
-    			if (s.getJobPrice() < job.getPrice()) {
-    				/* Diz que o melhor trabalho anterior nao vai ser aceite*/
-    				if (url != null) {
-    					trans = new TransporterClient(url);
-    					trans.decideJob(s.getJobIdentifier(), false);
-    				}
-    				
-    				job.setPrice(s.getJobPrice());
-    				job.setId(s.getJobIdentifier());
-    				job.setTransporterCompany(s.getCompanyName());
-    				url = urls.get(x);
-    				
-    			} else {
-    				trans.decideJob(s.getJobIdentifier(), false);
-    			}
+	    		if(s != null) {	
+    				if (s.getJobPrice() < job.getPrice()) {
+	    				/* Diz que o melhor trabalho anterior nao vai ser aceite*/
+	    				if (url != null) {
+	    					trans = new TransporterClient(url);
+	    					trans.decideJob(s.getJobIdentifier(), false);
+	    				}
+	    				
+	    				job.setPrice(s.getJobPrice());
+	    				job.setId(s.getJobIdentifier());
+	    				job.setTransporterCompany(s.getCompanyName());
+	    				url = urls.get(x);
+	    				
+	    			} else {
+	    				trans.decideJob(s.getJobIdentifier(), false);
+	    			}
+	    		}
     			
     		} catch(Exception e){
+    			// o que fazer naquele caso lol 
     			System.out.printf("Caught exception: %s%n", e);
     			e.printStackTrace();
     		}

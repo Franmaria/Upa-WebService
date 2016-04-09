@@ -5,12 +5,7 @@ import static javax.xml.ws.BindingProvider.ENDPOINT_ADDRESS_PROPERTY;
 import java.util.Map;
 import javax.xml.ws.BindingProvider;
 
-import pt.upa.transporter.ws.BadJobFault_Exception;
-import pt.upa.transporter.ws.BadLocationFault_Exception;
-import pt.upa.transporter.ws.BadPriceFault_Exception;
-import pt.upa.transporter.ws.JobView;
-import pt.upa.transporter.ws.TransporterPortType;
-import pt.upa.transporter.ws.TransporterService;
+import pt.upa.transporter.ws.*;
 
 public class TransporterClient {
 	private TransporterPortType port;

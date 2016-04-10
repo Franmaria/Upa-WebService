@@ -193,7 +193,7 @@ public class TransporterPort implements TransporterPortType {
 		Random rand = new Random();
 			
 		if (price <= 10){
-			while(priceOffer < price){
+			while(priceOffer > price){
 				priceOffer = rand.nextInt(price) + 1;
 			}
 			
@@ -202,24 +202,24 @@ public class TransporterPort implements TransporterPortType {
 		
 		if(paridade == 0) {
 			if (price % 2 == 0) {
-				while(priceOffer < price){
+				while(priceOffer > price){
 					priceOffer = rand.nextInt(price) + 1;
 				}
 			} else {
-				while(priceOffer > price){
-					priceOffer = rand.nextInt(price) + 1;
+				while(priceOffer < price){
+					priceOffer = rand.nextInt(price*100);
 				}
 			}
 		}
 		
 		if(paridade == 1) {
 			if (price % 2 == 1) {
-				while(priceOffer < price){
+				while(priceOffer > price){
 					priceOffer = rand.nextInt(price) + 1;
 				}
 			} else {
-				while(priceOffer > price){
-					priceOffer = rand.nextInt(price) + 1;
+				while(priceOffer < price){
+					priceOffer = rand.nextInt(price*100);
 				}
 			}
 		}	

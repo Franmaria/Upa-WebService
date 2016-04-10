@@ -1,6 +1,8 @@
 package pt.upa.transporter.ws;
 
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
+
 import javax.jws.WebService;
 
 @WebService(
@@ -20,6 +22,39 @@ public class TransporterPort implements TransporterPortType {
 	private List<String> rNorte = new ArrayList<String>(Arrays.asList("Porto","Braga","Viana do Castelo","Vila Real","Bragança"));
 	private List<String> rCentro = new ArrayList<String>(Arrays.asList("Lisboa","Leiria","Santarém","Castelo Branco","Coimbra","Aveiro","Viseu","Guarda"));
 	private List<String> rSul = new ArrayList<String>(Arrays.asList("Setúbel","Évora","Portalegre","Beja","Faro"));
+	
+	public class InnerClass extends TimerTask {
+		JobView _argR;
+		
+		public InnerClass (JobView argR) {
+			_argR = argR;
+		}
+		
+		public void run() {
+			// method to be executed by thread scheduler
+
+			boolean bool = false;
+			if(_argR.getJobState().value().equals((JobStateView.ACCEPTED).value())) {
+				// to heading
+				_argR.setJobState(JobStateView.HEADING);
+			}else if(_argR.getJobState().value().equals((JobStateView.HEADING).value())) {
+				// to ongoing
+				_argR.setJobState(JobStateView.ONGOING);
+			}else if(_argR.getJobState().value().equals((JobStateView.ONGOING).value())) {
+				//to completed (exit thread)
+				_argR.setJobState(JobStateView.COMPLETED);
+				bool= true; // cancels timerTask
+			}
+			if (!bool) {
+				Timer timer = new Timer(true);
+				TimerTask timerTask = new InnerClass(_argR);
+				long rand = ThreadLocalRandom.current().nextInt(5000) + 1;
+				System.out.println(rand); // test print
+				timer.schedule(timerTask,rand); // 1 - 5 sec
+			}
+		}
+	}
+	
 	
 	public TransporterPort(int n) {
 		transportNumber = n; 
@@ -78,9 +113,27 @@ public class TransporterPort implements TransporterPortType {
 		return job;
 	}
 
+	
 	public JobView decideJob(String id, boolean accept) throws BadJobFault_Exception {
-		JobView n = new JobView();
-		return n;
+		for (JobView i : jobs) {
+			if (i.getJobIdentifier().equals(id)) {
+				if(accept) {
+					Timer timer = new Timer(true);
+					Random rand = new Random();
+					long time = rand.nextInt(5000) + 1;
+					i.setJobState(JobStateView.ACCEPTED);
+					TimerTask timerTask = new InnerClass(i);
+					//running timer task as daemon thread
+					/* schedule(TimerTask task, long delay)
+					Schedules the specified task for execution after the specified delay.*/
+					timer.schedule(timerTask,time); // 1 - 5 sec
+				} else {
+					i.setJobState(JobStateView.REJECTED);
+				}
+				return i;
+			}
+		}
+		return null; 
 	}
 
 	public JobView jobStatus(String id){

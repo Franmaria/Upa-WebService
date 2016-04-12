@@ -18,14 +18,15 @@ public class TransporterMain {
 		String uddiURL = args[0];
 		String name = args[1];
 		String url = args[2];
+		String number = args[3];
 
 		Endpoint endpoint = null;
 		UDDINaming uddiNaming = null;
 		try {
-			TransporterPort port = new TransporterPort(Integer.parseInt(name.substring(13, name.length() - 1)));
+			TransporterPort port = new TransporterPort(Integer.parseInt(number));
 			endpoint = Endpoint.create(port);
-
 			// publish endpoint
+			
 			System.out.printf("Starting %s%n", url);
 			endpoint.publish(url);
 

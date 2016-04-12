@@ -43,12 +43,13 @@ public class TransporterPort implements TransporterPortType {
 			}else if(_argR.getJobState().value().equals((JobStateView.ONGOING).value())) {
 				//to completed (exit thread)
 				_argR.setJobState(JobStateView.COMPLETED);
+				System.out.println("tread final");
 				bool= true; // cancels timerTask
 			}
 			if (!bool) {
 				Timer timer = new Timer(true);
 				TimerTask timerTask = new InnerClass(_argR);
-				long rand = ThreadLocalRandom.current().nextInt(5000) + 1;
+				long rand = ThreadLocalRandom.current().nextInt(4001) + 1000;
 				System.out.println(rand); // test print
 				timer.schedule(timerTask,rand); // 1 - 5 sec
 			}
@@ -78,9 +79,9 @@ public class TransporterPort implements TransporterPortType {
 			ori = checkRegion(paridade, origin, 1);
 			dest = checkRegion(paridade, destination, 1);
 			
-			BadLocationFault f = new BadLocationFault();
-			
 			if(!ori || !dest){
+				BadLocationFault f = new BadLocationFault();
+				
 				if (!ori && !dest){
 					f.setLocation(origin + " " + destination);
 				} else if(!dest) {
@@ -91,6 +92,7 @@ public class TransporterPort implements TransporterPortType {
 				
 				throw new BadLocationFault_Exception("Localizacao nao existe",f);
 			}
+			
 			return null;
 		}
 		
@@ -109,7 +111,6 @@ public class TransporterPort implements TransporterPortType {
 		job.setJobPrice(priceOffer);
 		job.setJobState(JobStateView.PROPOSED);
 		jobs.add(job);
-		
 		return job;
 	}
 
@@ -161,15 +162,13 @@ public class TransporterPort implements TransporterPortType {
 		 * o modo e 1 ele percorre a que nao correria se fosse 0 */
 		int x; 
 		
-		if(modo == 0) {
-			for(x = 0; x < rCentro.size(); x++) {
-				if (regiao.equals(rCentro.get(x))) {
-					return true; 
-				}
+		for(x = 0; x < rCentro.size(); x++) {
+			if (regiao.equals(rCentro.get(x))) {
+				return true; 
 			}
 		}	
 		
-		if(paridade == 0 || (paridade == 1 && modo == 1)) {
+		if((paridade == 0 || modo == 1)) {
 			for(x = 0; x < rNorte.size(); x++){
 				if (regiao.equals(rNorte.get(x))) {
 					return true; 
@@ -177,7 +176,7 @@ public class TransporterPort implements TransporterPortType {
 			}
 		} 
 		
-		if(paridade == 1 || (paridade == 0 && modo == 1)) {
+		if((paridade == 1 || modo == 1)) {
 			for(x = 0; x < rSul.size(); x++){
 				if (regiao.equals(rSul.get(x))) {
 					return true; 
@@ -189,11 +188,13 @@ public class TransporterPort implements TransporterPortType {
 	}
 	
 	private int getprice(int paridade, int price) {
-		int priceOffer = price;
+		int priceOffer = 0;
+		boolean novo = true; 
 		Random rand = new Random();
 			
 		if (price <= 10){
-			while(priceOffer > price){
+			while(priceOffer > price || novo){
+				novo = false; 
 				priceOffer = rand.nextInt(price) + 1;
 			}
 			
@@ -202,24 +203,29 @@ public class TransporterPort implements TransporterPortType {
 		
 		if(paridade == 0) {
 			if (price % 2 == 0) {
-				while(priceOffer > price){
+				while(priceOffer > price || novo){
+					novo = false; 
 					priceOffer = rand.nextInt(price) + 1;
 				}
 			} else {
-				while(priceOffer < price){
-					priceOffer = rand.nextInt(price*100);
+				
+				while(priceOffer < price || novo){
+					novo = false; 
+					priceOffer = rand.nextInt(100);
 				}
 			}
 		}
 		
 		if(paridade == 1) {
 			if (price % 2 == 1) {
-				while(priceOffer > price){
+				while(priceOffer > price || novo){
+					novo = false;  
 					priceOffer = rand.nextInt(price) + 1;
 				}
 			} else {
-				while(priceOffer < price){
-					priceOffer = rand.nextInt(price*100);
+				while(priceOffer < price || novo){
+					novo = false; 
+					priceOffer = rand.nextInt(100);
 				}
 			}
 		}	

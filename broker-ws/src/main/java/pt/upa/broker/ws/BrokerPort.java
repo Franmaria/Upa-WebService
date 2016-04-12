@@ -31,7 +31,7 @@ public class BrokerPort implements BrokerPortType {
       uddiNaming = new UDDINaming(uddiURL);
     } catch(JAXRException e){
       System.out.printf("Caught exception: %s%n", e);
-			e.printStackTrace();
+      e.printStackTrace();
     }
   }
 
@@ -84,6 +84,7 @@ public class BrokerPort implements BrokerPortType {
     job.setState(TransportStateView.REQUESTED);
     job.setDestination(destination);
     job.setOrigin(origin);
+    job.setPrice(price);
     contratos.add(job);
     
     try{
@@ -95,11 +96,13 @@ public class BrokerPort implements BrokerPortType {
     		try{
     			JobView s = trans.requestJob(origin, destination, price);
 	    		if(s != null) {	
-    				if (s.getJobPrice() < job.getPrice()) {
+	    			if (s.getJobPrice() < job.getPrice()) {
 	    				/* Diz que o melhor trabalho anterior nao vai ser aceite*/
 	    				if (url != null) {
 	    					trans = new TransporterClient(url);
 	    					trans.decideJob(s.getJobIdentifier(), false);
+	    				} else {
+	    					job.setState(TransportStateView.BUDGETED);
 	    				}
 	    				
 	    				job.setPrice(s.getJobPrice());
@@ -136,32 +139,38 @@ public class BrokerPort implements BrokerPortType {
     		job.setState(TransportStateView.FAILED);
     		System.out.printf("Caught exception: %s%n", e);
     		e.printStackTrace();
-    		return null;
+    		return job.getId();
         }
     	
     } else{
     	
     	job.setState(TransportStateView.FAILED);
-    	return null; 
+    	return job.getId(); 
     }
   }
 
   public TransportView viewTransport(String id) throws UnknownTransportFault_Exception {
 	TransportView y;
 	TransporterClient trans;
-	String [] ids = id.split("/");
-	String transporterName = "UpaTransporter" + ids[0];
-	id = ids[1];
 	
-	for(int x = 0; x < contratos.size(); x++) {
-		y = contratos.get(x);
-		if(transporterName.equals(y.getTransporterCompany())) {	
-			if (id.equals(y.getId())){
-				try {
-					trans = new TransporterClient(uddiNaming.lookup(y.getTransporterCompany()));
-					String v = trans.jobStatus(id).getJobState().value(); 
-					y.setState(TransportStateView.fromValue(v));
+	if(id != null) {
+		for(int x = 0; x < contratos.size(); x++) {
+			y = contratos.get(x);
 					
+			if (id.equals(y.getId())){
+				
+				try {
+					if(!y.getState().equals(TransportStateView.FAILED)) {
+						trans = new TransporterClient(uddiNaming.lookup(y.getTransporterCompany()));
+						String v = trans.jobStatus(id).getJobState().value(); 
+						if(v.equals("ACCEPTED")) {
+							y.setState(TransportStateView.BOOKED);
+						}else if(v.equals("REJECTED")) {
+							y.setState(TransportStateView.FAILED);
+						}else {
+							y.setState(TransportStateView.fromValue(v));
+						}
+					}
 					return y;
 					
 				} catch(JAXRException e){
@@ -171,7 +180,6 @@ public class BrokerPort implements BrokerPortType {
 			}
 		}
 	}
-
 	UnknownTransportFault t = new UnknownTransportFault();
 	t.setId(id);
 	throw new UnknownTransportFault_Exception("O contrato de transporte não existe", t);

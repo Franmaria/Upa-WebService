@@ -1,11 +1,9 @@
 package pt.upa.transporter.ws;
 
-import static javax.xml.ws.BindingProvider.ENDPOINT_ADDRESS_PROPERTY;
+
 import static org.junit.Assert.*;
 
-import java.util.Map;
-
-import javax.xml.ws.BindingProvider;
+import java.util.List;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -13,12 +11,12 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import mockit.Expectations;
 import mockit.Mocked;
-import mockit.Verifications;
+
 
 public class TransporterPortTest {
-
+	private static TransporterPort transporter1;
+	private static TransporterPort transporter2; 
 		
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
@@ -31,11 +29,14 @@ public class TransporterPortTest {
 
 	@Before
 	public void setUp() throws Exception {
-		
+		transporter1 = new TransporterPort(1); // T impar
+		transporter2 = new TransporterPort(2); // T par
 	}
 
 	@After
 	public void tearDown() throws Exception {
+		transporter1.clearJobs();
+		transporter2.clearJobs();
 	}
 
 
@@ -59,8 +60,6 @@ public class TransporterPortTest {
 		
 		// impar - impar desce oferta| par par sobe oferta
 		
-		TransporterPort transporter1 = new TransporterPort(1); // T impar
-		TransporterPort transporter2 = new TransporterPort(2); // T par
 		assertNotNull(transporter1);
 		assertNotNull(transporter2);
 		j1 = transporter1.requestJob("Lisboa", "Setúbal", 49); // price check
@@ -87,15 +86,13 @@ public class TransporterPortTest {
         throws Exception {
 		JobView j1;
 		
-		// TESTS
-		TransporterPort transporter = new TransporterPort(1);
 		// transporter impar
-		assertNotNull(transporter);
+		assertNotNull(transporter1);
 		
 		
 		try {
 			// transporter impar
-			j1 = transporter.requestJob("Lisboa", "Setúbal", 100); // impar T par price
+			j1 = transporter1.requestJob("Lisboa", "Setúbal", 100); // impar T par price
 			// tests price must be 100
 			assertEquals("impar T impar price", 101, j1.getJobPrice());
 		} catch(BadPriceFault_Exception e) {
@@ -103,7 +100,7 @@ public class TransporterPortTest {
 		}	
 		
 		try {
-			j1 = transporter.requestJob("Lisboa", "Setúbal", 0); // impar T par price
+			j1 = transporter1.requestJob("Lisboa", "Setúbal", 0); // impar T par price
 			// tests price must be 100
 			assertEquals("impar T par price(0)", 0, j1.getJobPrice());
 		} catch(BadPriceFault_Exception e) {
@@ -111,7 +108,7 @@ public class TransporterPortTest {
 		}
 		
 		try {
-			j1 = transporter.requestJob("Lisboa", "Setúbal", -1);
+			j1 = transporter1.requestJob("Lisboa", "Setúbal", -1);
 			// this causes exception
 			fail("should have caught badpricefault");
 		} catch(BadPriceFault_Exception e) {
@@ -133,12 +130,6 @@ public class TransporterPortTest {
 		 * 
 		 * */
 
-		
-		// TESTS
-		TransporterPort transporter1 = new TransporterPort(1);
-		// impar -centro e sul
-		TransporterPort transporter2 = new TransporterPort(2);
-		// par - centro e norte
 		assertNotNull(transporter1);
 		assertNotNull(transporter2);
 		
@@ -192,12 +183,12 @@ public class TransporterPortTest {
 		
 		JobView j1;
 		// TESTS
-		TransporterPort transporter = new TransporterPort(1);
+		
 		// impar transporter south center
-		assertNotNull(transporter);
+		assertNotNull(transporter1);
 
 		try {
-			j1 = transporter.requestJob("Lisboa", "Setúbal", 100);
+			j1 = transporter1.requestJob("Lisboa", "Setúbal", 100);
 			// center 
 			// tests price must be 100
 		} catch(BadLocationFault_Exception e) {
@@ -205,7 +196,7 @@ public class TransporterPortTest {
 		}
 		
 		try {
-			j1 = transporter.requestJob("Lisboa", "Porto", 100);
+			j1 = transporter1.requestJob("Lisboa", "Porto", 100);
 			// center 
 			assertNull("impar transporter center-north",j1);
 			// tests price must be 100
@@ -215,7 +206,7 @@ public class TransporterPortTest {
 		
 		
 		try {
-			j1 = transporter.requestJob("China", "Franca", 100);
+			j1 = transporter1.requestJob("China", "Franca", 100);
 			// this causes exception
 			fail("fail in invalid origin-dest should return BadJobLocException");
 		} catch(BadLocationFault_Exception e) {
@@ -243,16 +234,15 @@ public class TransporterPortTest {
         throws Exception {
 		
 		JobView j1;
-		
+		List<JobView> jobs = transporter1.listJobs();
 		// TESTS
-		TransporterPort transporter = new TransporterPort(1);
-		assertNotNull(transporter);
-		transporter.addJob(transporter.createJob("T1","Lisboa","1/0","Porto",11,JobStateView.ACCEPTED));
-		transporter.addJob(transporter.createJob("T1","Lisboa","1/1","Porto",11,JobStateView.ACCEPTED));
-		transporter.addJob(transporter.createJob("T1","Lisboa","1/2","Porto",11,JobStateView.ACCEPTED));
+		assertNotNull(transporter1);
+		createJob(jobs,"T1","Lisboa","Porto", "1/0", 11, JobStateView.ACCEPTED);
+		createJob(jobs,"T1","Lisboa","Porto", "1/1", 11, JobStateView.ACCEPTED);
+		createJob(jobs,"T1","Lisboa","Porto", "1/2", 11, JobStateView.ACCEPTED);
 
 		try {
-			j1 = transporter.decideJob("1/0", false);
+			j1 = transporter1.decideJob("1/0", false);
 			assertEquals(JobStateView.REJECTED,j1.getJobState());
 		} catch(BadJobFault_Exception e) {
 			// if it gets exception in first decideJob fails
@@ -267,16 +257,15 @@ public class TransporterPortTest {
 	void testDecideJobBadJobFaultException()
         throws Exception {
 		
-
+		List<JobView> jobs = transporter1.listJobs();
 		// TESTS
-		TransporterPort transporter = new TransporterPort(1);
-		assertNotNull(transporter);
-		transporter.addJob(transporter.createJob("T1","Lisboa","1/0","Porto",11,JobStateView.REJECTED));
-		transporter.addJob(transporter.createJob("T1","Lisboa","1/1","Porto",11,JobStateView.ACCEPTED));
-		transporter.addJob(transporter.createJob("T1","Lisboa","1/2","Porto",11,JobStateView.ACCEPTED));
+		assertNotNull(transporter1);
+		createJob(jobs, "T1","Lisboa","Porto","1/0", 11, JobStateView.REJECTED);
+		createJob(jobs, "T1","Lisboa","Porto","1/1", 11, JobStateView.ACCEPTED);
+		createJob(jobs, "T1","Lisboa","Porto","1/2", 11, JobStateView.ACCEPTED);
 
 		try {
-			transporter.decideJob("1/0", false); 
+			transporter1.decideJob("1/0", false); 
 		} catch(BadJobFault_Exception e) {
 			// if it gets exception in first decideJob fails
 			//assertEquals("fabricated1", e.getMessage());
@@ -284,7 +273,7 @@ public class TransporterPortTest {
 		}
 		
 		try {
-			transporter.decideJob("china", false);
+			transporter1.decideJob("china", false);
 			// if it doesn't get exception in second decideJob fails
 			fail();
 		} catch(BadJobFault_Exception e) {
@@ -295,13 +284,6 @@ public class TransporterPortTest {
 		
 	}
 	
-	@Test
-	public 
-	void testJobStatusCheckSameNameInJobs() {
-	// checks if is possible for to JobView's to have same .jobIdentification
-	// this test adds only to exact same jobs and calls jobStatus
-	// faz sentido existir dois jobs exatamente iguais na mesma lista?
-	}
 
 	
 	// test jobStatus wrong id input should return null
@@ -312,8 +294,7 @@ public class TransporterPortTest {
 			
 		JobView jv;
 		// TESTS
-		TransporterPort transporter = new TransporterPort(5);
-		jv = transporter.jobStatus("T1");
+		jv = transporter1.jobStatus("T1");
 		
 		// verifications -> verifies expectations or assertions
 		
@@ -333,23 +314,23 @@ public class TransporterPortTest {
 		JobStateView js = JobStateView.ACCEPTED;
 		JobView jv = new JobView();
 		jv.setCompanyName("T1");
-		jv.setJobDestination("Lisboa");
+		jv.setJobDestination("Porto");
 		jv.setJobIdentifier("1/1"); // transporterNum/contratNum->starts at 0
-		jv.setJobOrigin("Porto");
+		jv.setJobOrigin("Lisboa");
 		jv.setJobPrice(11);
 		jv.setJobState(js);
 		
+		List<JobView> jobs = transporter1.listJobs();
 		// TESTS
-		TransporterPort transporter = new TransporterPort(1);
 		
-		transporter.addJob(transporter.createJob("T2","Lisboa","1/0","Porto",12,JobStateView.ACCEPTED));
-		transporter.addJob(transporter.createJob("T1","Lisboa","1/1","Porto",11,JobStateView.ACCEPTED));
-		j1=transporter.jobStatus("1/1"); // change values and recheck
-		j2=transporter.jobStatus("id");
+		createJob(jobs,"T2","Lisboa","Porto", "1/0", 12, JobStateView.ACCEPTED);
+		createJob(jobs,"T1","Lisboa","Porto", "1/1", 11, JobStateView.ACCEPTED);
+		j1 = transporter1.jobStatus("1/1"); // change values and recheck
+		j2 = transporter1.jobStatus("id");
 		
 		// verifications -> verifies expectations
 		
-		assertNotNull(transporter); // checks if NULL
+		assertNotNull(transporter1); // checks if NULL
 		assertNotNull(j1); // checks if NULL
 		assertEquals(jv.getCompanyName(),j1.getCompanyName());
 		assertEquals(jv.getJobDestination(),j1.getJobDestination());
@@ -358,5 +339,16 @@ public class TransporterPortTest {
 		assertEquals(jv.getJobPrice(),j1.getJobPrice());
 		assertEquals(jv.getJobState(),j1.getJobState());
 		assertNull(j2); // j2 must be null because id is wrong
-	} 
+	}
+	
+	public void createJob(List<JobView> jobs, String name, String origin, String destination,  String id, int preco,JobStateView state ) {
+		JobView jv = new JobView();
+		jv.setCompanyName(name);
+		jv.setJobDestination(destination);
+		jv.setJobIdentifier(id); // transporterNum/contratNum->starts at 0
+		jv.setJobOrigin(origin);
+		jv.setJobPrice(preco);
+		jv.setJobState(state);
+		jobs.add(jv);
+	}
 }

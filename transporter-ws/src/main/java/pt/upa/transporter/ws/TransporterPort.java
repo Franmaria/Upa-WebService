@@ -43,14 +43,12 @@ public class TransporterPort implements TransporterPortType {
 			}else if(_argR.getJobState().value().equals((JobStateView.ONGOING).value())) {
 				//to completed (exit thread)
 				_argR.setJobState(JobStateView.COMPLETED);
-				System.out.println("tread final");
 				bool= true; // cancels timerTask
 			}
 			if (!bool) {
 				Timer timer = new Timer(true);
 				TimerTask timerTask = new InnerClass(_argR);
 				long rand = ThreadLocalRandom.current().nextInt(4001) + 1000;
-				System.out.println(rand); // test print
 				timer.schedule(timerTask,rand); // 1 - 5 sec
 			}
 		}
@@ -134,7 +132,10 @@ public class TransporterPort implements TransporterPortType {
 				return i;
 			}
 		}
-		return null; 
+		
+		BadJobFault bj = new BadJobFault();
+	    bj.setId("job not found");
+	    throw new BadJobFault_Exception("badJobFault",bj); 
 	}
 
 	public JobView jobStatus(String id){
@@ -188,7 +189,6 @@ public class TransporterPort implements TransporterPortType {
 	}
 	
 	private int getprice(int paridade, int price) {	
-		System.out.println(price);
 		if (price <= 10){
 			price--;
 		
@@ -213,7 +213,6 @@ public class TransporterPort implements TransporterPortType {
 		if(price < 0 ) {
 			return 0; 
 		} else{
-			System.out.println(price);
 			return price;
 		}
 	}

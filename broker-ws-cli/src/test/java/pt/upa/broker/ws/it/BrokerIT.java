@@ -9,10 +9,11 @@ import static org.junit.Assert.*;
  *  Invoked by Maven in the "verify" life-cycle phase
  *  Should invoke "live" remote servers 
  */
-public class ExampleIT {
+public class BrokerIT {
 
     // static members
-
+	
+	
 
     // one-time initialization and clean-up
 

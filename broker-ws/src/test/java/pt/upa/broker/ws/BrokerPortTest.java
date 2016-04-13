@@ -47,7 +47,6 @@ public class BrokerPortTest {
 
 	@Test
 	public void test() {
-		fail("Not yet implemented");
 	}
 
 }

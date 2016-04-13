@@ -54,7 +54,7 @@ public class BrokerClientApplication {
 		System.out.println(s.getTransporterCompany());
 		System.out.println(s.getState().value());
 		System.out.println(s.getPrice());
-		/*
+
 		try {
 			  Thread.sleep(5000);
 			} catch (InterruptedException ie) {
@@ -68,6 +68,5 @@ public class BrokerClientApplication {
 		System.out.println(s.getTransporterCompany());
 		System.out.println(s.getState().value());
 		System.out.println(s.getPrice());
-		*/
 	}
 }

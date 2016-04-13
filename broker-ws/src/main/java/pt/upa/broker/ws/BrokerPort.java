@@ -45,7 +45,6 @@ public class BrokerPort implements BrokerPortType {
     boolean orig = false , dest = false;
     int x;
     TransporterClient trans;
-    String url = null;
     
     for(x = 0; x < cidades.size(); x++) {
         if(origin.equals(cidades.get(x))) {
@@ -84,69 +83,87 @@ public class BrokerPort implements BrokerPortType {
     job.setState(TransportStateView.REQUESTED);
     job.setDestination(destination);
     job.setOrigin(origin);
-    job.setPrice(price);
     contratos.add(job);
     
+    boolean existeOferta = false; 
+	String url = null; // variavel que guarda o url da melhor oferta ou no caso de nenhuma oferta ser aceite da primeria valida 
     try{
     	List<String> urls = new ArrayList<String>(uddiNaming.list("UpaTransporter%"));
+    	
     	
     	for(x = 0;x < urls.size(); x++){
     		trans = new TransporterClient(urls.get(x));
     		
     		try{
     			JobView s = trans.requestJob(origin, destination, price);
-	    		if(s != null) {	
-	    			if (s.getJobPrice() < job.getPrice()) {
-	    				/* Diz que o melhor trabalho anterior nao vai ser aceite*/
-	    				if (url != null) {
-	    					trans = new TransporterClient(url);
-	    					trans.decideJob(s.getJobIdentifier(), false);
-	    				} else {
-	    					job.setState(TransportStateView.BUDGETED);
-	    				}
-	    				
-	    				job.setPrice(s.getJobPrice());
+	    		
+    			if(s != null) {	
+    				
+    				if(url == null) {  // se for a primeira oferta valida entra dento do if
+    					existeOferta = true;
+    					job.setPrice(s.getJobPrice());
+    					job.setId(s.getJobIdentifier());
+    					job.setState(TransportStateView.BUDGETED);
+    					url = urls.get(x);
+    				}
+    				
+	    			if(s.getJobPrice() < job.getPrice()) 	
 	    				job.setId(s.getJobIdentifier());
+	    				job.setPrice(s.getJobPrice()); // o preco do job e sempre atualizado para no caso de nenhuma oferta ser aceite termos a melhor oferta 
+	    				
+    				if (s.getJobPrice() < price) { 
+    					job.setId(s.getJobIdentifier());
 	    				job.setTransporterCompany(s.getCompanyName());
 	    				url = urls.get(x);
 	    				
-	    			} else {
-	    				trans.decideJob(s.getJobIdentifier(), false);
-	    			}
-	    		}
+	    			} else 
+	    				trans.decideJob(s.getJobIdentifier(), false); 	
+    			}
     			
     		} catch(Exception e){
-    			// o que fazer naquele caso lol 
+    			job.setState(TransportStateView.FAILED);
     			System.out.printf("Caught exception: %s%n", e);
     			e.printStackTrace();
     		}
     	}
     } catch(JAXRException e) {
+    	job.setState(TransportStateView.FAILED);
     	System.out.printf("Caught exception: %s%n", e);
 		e.printStackTrace();
     }
  
-    if(job.getTransporterCompany() != null) {
+    
+    if(job.getTransporterCompany() != null) { // verifica se existe uma transportadora no job pois so lhe e atribuida uma se houver uma proposta que pode ser aceite
     	
     	trans = new TransporterClient(url);
     	
     	try {
     		trans.decideJob(job.getId(), true);
     		job.setState(TransportStateView.BOOKED);
-    		return job.getId();
-    	
+    		
     	} catch(BadJobFault_Exception e) {
     		job.setState(TransportStateView.FAILED);
     		System.out.printf("Caught exception: %s%n", e);
     		e.printStackTrace();
-    		return job.getId();
+    		
         }
     	
     } else{
-    	
     	job.setState(TransportStateView.FAILED);
-    	return job.getId(); 
+    	
+    	if(existeOferta) {
+    		UnavailableTransportPriceFault f = new UnavailableTransportPriceFault();
+    		f.setBestPriceFound(job.getPrice());
+    		throw new UnavailableTransportPriceFault_Exception("Não existe uma oferta com um preço menor",f);
+    	}else {
+    		UnavailableTransportFault f = new UnavailableTransportFault();
+    		f.setDestination(destination);
+    		f.setOrigin(origin);
+    		throw new UnavailableTransportFault_Exception("Nao existe um transporte despunive para as localizacoes",f);
+    	}
     }
+    
+    return job.getId();
   }
 
   public TransportView viewTransport(String id) throws UnknownTransportFault_Exception {

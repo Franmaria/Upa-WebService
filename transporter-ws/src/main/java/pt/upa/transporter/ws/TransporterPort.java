@@ -21,7 +21,7 @@ public class TransporterPort implements TransporterPortType {
 	private int contratNumber = 0;
 	private List<String> rNorte = new ArrayList<String>(Arrays.asList("Porto","Braga","Viana do Castelo","Vila Real","Bragança"));
 	private List<String> rCentro = new ArrayList<String>(Arrays.asList("Lisboa","Leiria","Santarém","Castelo Branco","Coimbra","Aveiro","Viseu","Guarda"));
-	private List<String> rSul = new ArrayList<String>(Arrays.asList("Setúbel","Évora","Portalegre","Beja","Faro"));
+	private List<String> rSul = new ArrayList<String>(Arrays.asList("Setúbal","Évora","Portalegre","Beja","Faro"));
 	
 	public class InnerClass extends TimerTask {
 		JobView _argR;
@@ -96,7 +96,7 @@ public class TransporterPort implements TransporterPortType {
 			return null;
 		}
 		
-		if(price < 100) {
+		if(price <= 100) {
 			priceOffer = getprice(paridade, price);
 		} else{
 			return null;
@@ -187,49 +187,34 @@ public class TransporterPort implements TransporterPortType {
 		return false;
 	}
 	
-	private int getprice(int paridade, int price) {
-		int priceOffer = 0;
-		boolean novo = true; 
-		Random rand = new Random();
-			
+	private int getprice(int paridade, int price) {	
+		System.out.println(price);
 		if (price <= 10){
-			while(priceOffer > price || novo){
-				novo = false; 
-				priceOffer = rand.nextInt(price) + 1;
-			}
-			
-			return priceOffer;
+			price--;
+		
 		}
 		
-		if(paridade == 0) {
+		else if(paridade == 0) {
 			if (price % 2 == 0) {
-				while(priceOffer > price || novo){
-					novo = false; 
-					priceOffer = rand.nextInt(price) + 1;
-				}
+				price--;
 			} else {
-				
-				while(priceOffer < price || novo){
-					novo = false; 
-					priceOffer = rand.nextInt(100);
-				}
+				price++;
 			}
 		}
 		
-		if(paridade == 1) {
+		else if(paridade == 1) {
 			if (price % 2 == 1) {
-				while(priceOffer > price || novo){
-					novo = false;  
-					priceOffer = rand.nextInt(price) + 1;
-				}
-			} else {
-				while(priceOffer < price || novo){
-					novo = false; 
-					priceOffer = rand.nextInt(100);
-				}
+				price--;
+			} else { 
+				price++;
 			}
 		}	
 		
-		return priceOffer; 
+		if(price < 0 ) {
+			return 0; 
+		} else{
+			System.out.println(price);
+			return price;
+		}
 	}
 }

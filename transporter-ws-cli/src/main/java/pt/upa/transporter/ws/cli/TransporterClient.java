@@ -2,6 +2,7 @@ package pt.upa.transporter.ws.cli;
 
 import static javax.xml.ws.BindingProvider.ENDPOINT_ADDRESS_PROPERTY;
 
+import java.util.List;
 import java.util.Map;
 import javax.xml.ws.BindingProvider;
 
@@ -18,6 +19,10 @@ public class TransporterClient {
 		requestContext.put(ENDPOINT_ADDRESS_PROPERTY, url);
 	}
 	
+	public String ping(String name) {
+		return port.ping(name);
+	}
+	
 	public JobView requestJob( String origin, String destination, int price) throws BadLocationFault_Exception, BadPriceFault_Exception {
 		return port.requestJob(origin, destination, price);
 	}
@@ -28,5 +33,13 @@ public class TransporterClient {
 	
 	public JobView jobStatus(String id) {
 		return port.jobStatus(id);
+	}
+	
+	public List<JobView> listJobs() {
+		return port.listJobs();
+	}
+	
+	public void clearJobs() {
+		port.clearJobs();
 	}
 }

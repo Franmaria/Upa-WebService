@@ -107,15 +107,16 @@ public class BrokerPort implements BrokerPortType {
     					url = urls.get(x);
     				}
     				
-	    			if(s.getJobPrice() < job.getPrice()) 	
+	    			if(s.getJobPrice() <= job.getPrice()) {	
 	    				job.setId(s.getJobIdentifier());
 	    				job.setPrice(s.getJobPrice()); // o preco do job e sempre atualizado para no caso de nenhuma oferta ser aceite termos a melhor oferta 
-	    				
-    				if (s.getJobPrice() < price) { 
-    					job.setId(s.getJobIdentifier());
-	    				job.setTransporterCompany(s.getCompanyName());
-	    				url = urls.get(x);
-	    				
+	    			
+	    				if (s.getJobPrice() <= price) { 
+		    				job.setTransporterCompany(s.getCompanyName());
+		    				url = urls.get(x);
+	    				} else 
+		    				trans.decideJob(s.getJobIdentifier(), false);
+	    			
 	    			} else 
 	    				trans.decideJob(s.getJobIdentifier(), false); 	
     			}

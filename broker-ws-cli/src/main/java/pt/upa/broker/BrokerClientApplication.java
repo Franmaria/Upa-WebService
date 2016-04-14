@@ -46,6 +46,7 @@ public class BrokerClientApplication {
 		requestContext.put(ENDPOINT_ADDRESS_PROPERTY, endpointAddress);
 		
 		String id = port.requestTransport("Lisboa", "Coimbra", 21);
+		port.requestTransport("Lisboa", "Coimbra", 21);
 		System.out.println(id);
 		TransportView s = port.viewTransport(id);
 		System.out.println(s.getDestination());

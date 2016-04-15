@@ -16,8 +16,8 @@ import javax.xml.registry.JAXRException;
  *  Invoked by Maven in the "verify" life-cycle phase
  *  Should invoke "live" remote servers 
  */
-public class TransporterIT {
 
+public class TransporterIT {
     // static members
 	private static TransporterClient transporter1;
 	private static TransporterClient transporter2;
@@ -45,10 +45,15 @@ public class TransporterIT {
 		
 		transporter1 = new TransporterClient(url1);
 		transporter2 = new TransporterClient(url2);
+		
+		transporter1.clearJobs();
+		transporter2.clearJobs();
     }
 
     @AfterClass
     public static void oneTimeTearDown() {
+    	transporter1.clearJobs();
+    	transporter2.clearJobs();
     	transporter1 = null;
     	transporter2 = null;
     }
@@ -206,7 +211,10 @@ public class TransporterIT {
     	
     	try {
 			  Thread.sleep(5000);
-			} catch (InterruptedException ie) {}
+			} catch (InterruptedException e) {
+				System.out.printf("Caught exception: %s%n", e);
+			    e.printStackTrace();
+			}
     	 
     	
     	job1 = transporter1.jobStatus(job1.getJobIdentifier());

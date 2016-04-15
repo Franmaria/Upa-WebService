@@ -27,25 +27,29 @@ public class BrokerPort implements BrokerPortType {
                                                               "Setúbal","Évora","Portalegre","Beja","Faro"));
 
   public BrokerPort(String uddiURL) {
-    try {
-      uddiNaming = new UDDINaming(uddiURL);
+    /*Broker port cria uma instancia do UDDINaming e atribui a variavel global uddiNaming*/
+	try {
+    	uddiNaming = new UDDINaming(uddiURL);
     } catch(JAXRException e){
-      System.out.printf("Caught exception: %s%n", e);
-      e.printStackTrace();
+    	System.out.printf("Caught exception: %s%n", e);
+    	e.printStackTrace();
     }
   }
 
   public String ping(String name) {
-	  return name; 
+	/*ping retorna o prorio argumento, serve para testar a ligacao*/
+	 return name; 
   }
 
 
   public String requestTransport(String origin, String destination, int price) throws InvalidPriceFault_Exception, UnavailableTransportFault_Exception,
 								UnavailableTransportPriceFault_Exception, UnknownLocationFault_Exception {
-    boolean orig = false , dest = false;
-    int x;
+	  /*requestTransport pede a todas as transportadoras uma oferta e escolhe a melhor*/
+	boolean orig = false , dest = false;
+	int x;
     TransporterClient trans;
     
+    /*-------------------------teste para verificar se a localizacao e o price sao validos--------------------------*/
     for(x = 0; x < cidades.size(); x++) {
         if(origin.equals(cidades.get(x))) {
             orig = true;
@@ -79,6 +83,7 @@ public class BrokerPort implements BrokerPortType {
       throw new InvalidPriceFault_Exception("Preço incorreto", i);
     }
 
+    /*------------------------Criacao de um novo transport e procura da melhor oferta---------------------------*/
     TransportView job = new TransportView();
     job.setState(TransportStateView.REQUESTED);
     job.setDestination(destination);
@@ -87,29 +92,33 @@ public class BrokerPort implements BrokerPortType {
     
     boolean existeOferta = false; 
 	String url = null; // variavel que guarda o url da melhor oferta ou no caso de nenhuma oferta ser aceite da primeria valida 
-    try{
-    	List<String> urls = new ArrayList<String>(uddiNaming.list("UpaTransporter%"));
-    	
-    	
-    	for(x = 0;x < urls.size(); x++){
-    		trans = new TransporterClient(urls.get(x));
-    		
-    		try{
-    			JobView s = trans.requestJob(origin, destination, price);
-	    		
-    			if(s != null) {	
-    				
-    				if(url == null) {  // se for a primeira oferta valida entra dento do if
-    					existeOferta = true;
-    					job.setPrice(s.getJobPrice());
-    					job.setId(s.getJobIdentifier());
-    					job.setState(TransportStateView.BUDGETED);
-    					url = urls.get(x);
-    				}
-    				
+    
+	
+    List<String> urls;
+	try {
+		urls = new ArrayList<String>(uddiNaming.list("UpaTransporter%"));
+			
+		for(x = 0;x < urls.size(); x++){
+			JobView s;
+				
+			try {
+				
+				trans = new TransporterClient(urls.get(x));	
+				s = trans.requestJob(origin, destination, price);
+	   
+				if(s != null) {	
+					
+					if(url == null) {  // se for a primeira oferta valida entra dento do if
+						existeOferta = true;
+						job.setPrice(s.getJobPrice());
+						job.setId(s.getJobIdentifier());
+						job.setState(TransportStateView.BUDGETED);
+						url = urls.get(x);
+					}
+					
 	    			if(s.getJobPrice() <= job.getPrice()) {	
 	    				job.setId(s.getJobIdentifier());
-	    				job.setPrice(s.getJobPrice()); // o preco do job e sempre atualizado para no caso de nenhuma oferta ser aceite termos a melhor oferta 
+	    				job.setPrice(s.getJobPrice()); // o preco do job e sempre atualizado dentro do if para no caso de nenhuma oferta ser aceite termos a melhor oferta 
 	    			
 	    				if (s.getJobPrice() <= price) { 
 		    				job.setTransporterCompany(s.getCompanyName());
@@ -117,24 +126,23 @@ public class BrokerPort implements BrokerPortType {
 	    				} else 
 		    				trans.decideJob(s.getJobIdentifier(), false);
 	    			
-	    			} else 
-	    				trans.decideJob(s.getJobIdentifier(), false); 	
-    			}
-    			
-    		} catch(Exception e){
-    			job.setState(TransportStateView.FAILED);
-    			System.out.printf("Caught exception: %s%n", e);
-    			e.printStackTrace();
-    		}
-    	}
-    } catch(JAXRException e) {
-    	job.setState(TransportStateView.FAILED);
-    	System.out.printf("Caught exception: %s%n", e);
-		e.printStackTrace();
-    }
- 
+	    			} else
+							trans.decideJob(s.getJobIdentifier(), false); 	
+				}
+			} catch (BadLocationFault_Exception | BadPriceFault_Exception | BadJobFault_Exception e) {
+				System.out.printf("Caught exception: %s%n", e);
+			    e.printStackTrace();
+			} catch(Exception e) {
+				System.out.printf("Caught exception: %s%n", e);
+			    e.printStackTrace();
+			}
+		}
+	} catch (JAXRException e) {
+		System.out.printf("Caught exception: %s%n", e);
+	    e.printStackTrace();
+	}	
     
-    if(job.getTransporterCompany() != null) { // verifica se existe uma transportadora no job pois so lhe e atribuida uma se houver uma proposta que pode ser aceite
+	if(job.getTransporterCompany() != null) { // verifica se existe uma transportadora no job pois so lhe e atribuida uma companhia se houver uma proposta que pode ser aceite
     	
     	trans = new TransporterClient(url);
     	
@@ -152,7 +160,7 @@ public class BrokerPort implements BrokerPortType {
     } else{
     	job.setState(TransportStateView.FAILED);
     	
-    	if(existeOferta) {
+    	if(existeOferta) { // se existir pelo menos uma oferta quer dizer que nao foi encontrada nenhuma proposta com o price menor que o maximo 
     		UnavailableTransportPriceFault f = new UnavailableTransportPriceFault();
     		f.setBestPriceFound(job.getPrice());
     		throw new UnavailableTransportPriceFault_Exception("Não existe uma oferta com um preço menor",f);
@@ -160,7 +168,7 @@ public class BrokerPort implements BrokerPortType {
     		UnavailableTransportFault f = new UnavailableTransportFault();
     		f.setDestination(destination);
     		f.setOrigin(origin);
-    		throw new UnavailableTransportFault_Exception("Nao existe um transporte despunive para as localizacoes",f);
+    		throw new UnavailableTransportFault_Exception("Nao existe um transporter disponivel",f);
     	}
     }
     
@@ -168,12 +176,11 @@ public class BrokerPort implements BrokerPortType {
   }
 
   public TransportView viewTransport(String id) throws UnknownTransportFault_Exception {
-	TransportView y;
+	/*vieTransport procura pelo transporte com a Identificacao id*/
 	TransporterClient trans;
 	
 	if(id != null) {
-		for(int x = 0; x < contratos.size(); x++) {
-			y = contratos.get(x);
+		for(TransportView y : contratos){ 
 					
 			if (id.equals(y.getId())){
 				
@@ -194,6 +201,9 @@ public class BrokerPort implements BrokerPortType {
 				} catch(JAXRException e){
 					System.out.printf("Caught exception: %s%n", e);
 					e.printStackTrace();
+				} catch(Exception e) {
+					System.out.printf("Caught exception: %s%n", e);
+					e.printStackTrace();
 				}
 			}
 		}
@@ -204,10 +214,34 @@ public class BrokerPort implements BrokerPortType {
   }
 
   public List<TransportView> listTransports() {
+	  /*listTransport e um metodo auxiliar que retorna todos a lista contratos*/
 	  return contratos;
   }
 
   public void clearTransports(){
+	  /*cleaTransports e um metodo auxiliar que "apaga" a lista de trabalhos e pede as transportadoras para fazer o mesmo*/
 	contratos = new ArrayList<TransportView>();
+	
+	List<String> urls; 
+	TransporterClient trans; 
+	
+	try {
+		urls = new ArrayList<String>(uddiNaming.list("UpaTransporter%"));
+		
+		for(String i : urls) {
+			try {
+				trans = new TransporterClient(i);
+				trans.clearJobs();
+			} catch(Exception e){
+				System.out.printf("Caught exception: %s%n", e);
+				e.printStackTrace();
+				continue;
+			}
+		}
+		
+	} catch (JAXRException e) {
+		System.out.printf("Caught exception: %s%n", e);
+		e.printStackTrace();
+	}
   }
 }

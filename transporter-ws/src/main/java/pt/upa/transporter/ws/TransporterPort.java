@@ -17,13 +17,14 @@ import javax.jws.WebService;
 public class TransporterPort implements TransporterPortType {
 
 	private List<JobView> jobs = new ArrayList<JobView>();
-	private int transportNumber; 
+	private int transportNumber; // guarda o numero do transporter 
 	private int contratNumber = 0;
 	private List<String> rNorte = new ArrayList<String>(Arrays.asList("Porto","Braga","Viana do Castelo","Vila Real","Bragança"));
 	private List<String> rCentro = new ArrayList<String>(Arrays.asList("Lisboa","Leiria","Santarém","Castelo Branco","Coimbra","Aveiro","Viseu","Guarda"));
 	private List<String> rSul = new ArrayList<String>(Arrays.asList("Setúbal","Évora","Portalegre","Beja","Faro"));
 	
 	public class InnerClass extends TimerTask {
+		/*InnerClass e usada para fazer a mudaca do estado do trabalho ao longo do tempo */
 		JobView _argR;
 		
 		public InnerClass (JobView argR) {
@@ -56,9 +57,11 @@ public class TransporterPort implements TransporterPortType {
 	
 	
 	public TransporterPort(int n) {
+		/*TransporterPort recebe como argumento o numero do transporter*/
 		transportNumber = n; 
 	}
 	public String ping(String name){
+		/*ping retorna o prorio argumento, serve para testar a ligacao*/
 		return name;
 	}
 
@@ -114,6 +117,7 @@ public class TransporterPort implements TransporterPortType {
 
 	
 	public JobView decideJob(String id, boolean accept) throws BadJobFault_Exception {
+		/*Muda o estado do job e pode adiar uma task para mudar o estado ao longo do tempo*/
 		for (JobView i : jobs) {
 			if (i.getJobIdentifier().equals(id)) {
 				if(accept) {
@@ -139,6 +143,7 @@ public class TransporterPort implements TransporterPortType {
 	}
 
 	public JobView jobStatus(String id){
+		/*retorna o job com o id*/
 		JobView j; 
 		for(int x = 0; x < jobs.size(); x++) {
 			j = jobs.get(x);
@@ -159,8 +164,8 @@ public class TransporterPort implements TransporterPortType {
 	}
 	
 	private boolean checkRegion(int paridade, String regiao, int modo) {
-		/* se o inteiro paridade for 0 o numero e par se for 1 o numero e impar. Quando modo e 0 percorrre as listas normais, qunado 
-		 * o modo e 1 ele percorre a que nao correria se fosse 0 */
+		/* se o inteiro paridade for 0 o numero e par se for 1 o numero e impar. Quando modo e 0 percorrre as listas normais, quando
+		 * o modo e 1 ele percorre todas as listas */
 		int x; 
 		
 		for(x = 0; x < rCentro.size(); x++) {

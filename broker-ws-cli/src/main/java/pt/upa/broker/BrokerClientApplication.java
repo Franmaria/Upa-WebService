@@ -2,6 +2,7 @@ package pt.upa.broker;
 
 import static javax.xml.ws.BindingProvider.ENDPOINT_ADDRESS_PROPERTY;
 
+
 import java.util.Map;
 
 import javax.xml.ws.BindingProvider;
@@ -9,7 +10,6 @@ import javax.xml.ws.BindingProvider;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
 import pt.upa.broker.ws.BrokerPortType;
 import pt.upa.broker.ws.BrokerService;
-import pt.upa.broker.ws.TransportView;
 
 public class BrokerClientApplication {
 

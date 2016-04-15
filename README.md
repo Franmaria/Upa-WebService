@@ -1,18 +1,16 @@
 # Projeto de Sistemas Distribuídos 2015-2016 #
 
-Grupo de SD ... - Campus ...
+Grupo de SD 60 - Campus Taguspark
 *(preencher com número do grupo de SD no Fénix e depois apagar esta linha)*
 
-... ... ...
+Daniel Reis 81981 ddreis88@gmail.com
 
-... ... ...
+Francisco Maria 81965 fran6maria@gmail.com
 
-... ... ...
-*(preencher com nome, número e email de membro do grupo e depois apagar esta linha)*
-
+Ostap Kozak 82535 ostap_95@hotmail.com
 
 Repositório:
-[tecnico-distsys/C_XX-project](https://github.com/tecnico-distsys/C_XX-project/)
+[tecnico-distsys/T_60-project](https://github.com/tecnico-distsys/T_60-project/)
 
 -------------------------------------------------------------------------------
 
@@ -23,33 +21,32 @@ Repositório:
 
 [0] Iniciar sistema operativo
 
-Indicar Windows ou Linux
-*(escolher um dos dois, que esteja disponível nos laboratórios, e depois apagar esta linha)*
+Linux
+
 
 
 [1] Iniciar servidores de apoio
 
 JUDDI:
 ```
-...
+juddi/bin/startup.sh
 ```
-
 
 [2] Criar pasta temporária
 
 ```
-cd ...
-mkdir ...
+mkdir t60
+cd t60
+
 ```
 
 
 [3] Obter código fonte do projeto (versão entregue)
 
 ```
-git clone ... 
-```
-*(colocar aqui comandos git para obter a versão entregue a partir da tag e depois apagar esta linha)*
+git clone -b SD_R1 https://github.com/tecnico-softeng-distsys-2015/T_60-project.git 
 
+```
 
 [4] Instalar módulos de bibliotecas auxiliares
 
@@ -58,12 +55,6 @@ cd uddi-naming
 mvn clean install
 ```
 
-```
-cd ...
-mvn clean install
-```
-
-
 -------------------------------------------------------------------------------
 
 ### Serviço TRANSPORTER
@@ -71,20 +62,23 @@ mvn clean install
 [1] Construir e executar **servidor**
 
 ```
-cd ...-ws
+cd transporter-ws
 mvn clean install
-mvn exec:java
+mvn -Dws.i=1 exec:java
 ```
+Construir segundo servidor do transporter
+```
+cd transporter-ws
+mvn clean install
+mvn -Dws.i=2 exec:java
+````
 
 [2] Construir **cliente** e executar testes
 
 ```
-cd ...-ws-cli
+cd transporter-ws-cli
 mvn clean install
 ```
-
-...
-
 
 -------------------------------------------------------------------------------
 
@@ -93,7 +87,7 @@ mvn clean install
 [1] Construir e executar **servidor**
 
 ```
-cd ...-ws
+cd broker-ws
 mvn clean install
 mvn exec:java
 ```
@@ -102,7 +96,7 @@ mvn exec:java
 [2] Construir **cliente** e executar testes
 
 ```
-cd ...-ws-cli
+cd broker-ws-cli
 mvn clean install
 ```
 

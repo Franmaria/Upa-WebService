@@ -19,7 +19,7 @@ public class TransporterClientApplication {
 		}
 
 		String uddiURL = args[0];
-		String name = "UpaTransporter3";
+		String name = "UpaTransporter1";
 
 		System.out.printf("Contacting UDDI at %s%n", uddiURL);
 		UDDINaming uddiNaming = new UDDINaming(uddiURL);
@@ -42,14 +42,6 @@ public class TransporterClientApplication {
 		BindingProvider bindingProvider = (BindingProvider) port;
 		Map<String, Object> requestContext = bindingProvider.getRequestContext();
 		requestContext.put(ENDPOINT_ADDRESS_PROPERTY, endpointAddress);
-		
-		JobView s = port.jobStatus("3/0");
-		System.out.println(s.getJobDestination());
-		System.out.println(s.getJobOrigin());
-		System.out.println(s.getJobIdentifier());
-		System.out.println(s.getCompanyName());
-		System.out.println(s.getJobState().value());
-		System.out.println(s.getJobPrice());
 	
 	}
 }

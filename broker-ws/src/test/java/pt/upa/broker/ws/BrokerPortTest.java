@@ -4,6 +4,7 @@ import static org.junit.Assert.*;
 
 import java.util.Map;
 
+import javax.xml.registry.JAXRException;
 import javax.xml.ws.BindingProvider;
 
 import org.junit.After;
@@ -18,9 +19,8 @@ import mockit.Verifications;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
 import pt.upa.transporter.ws.JobStateView;
 import pt.upa.transporter.ws.JobView;
-import pt.upa.transporter.ws.TransporterPortType; //TODO check this import
+import pt.upa.transporter.ws.TransporterPortType; 
 import pt.upa.transporter.ws.TransporterService;
-import pt.upa.transporter.ws.cli.TransporterClient;
 
 public class BrokerPortTest {
 
@@ -45,27 +45,22 @@ public class BrokerPortTest {
 	void testMockTransporterServer(
         @Mocked final TransporterService service,
         @Mocked final P port,
-        @Mocked final Map<String,Object> requestCont) // P extends the above types
+        @Mocked final Map<String,Object> requestCont, // P extends the above types
+        @Mocked final UDDINaming uddi)
         throws Exception {
 		/* this test should always work
 		 * starting Template Test
 		 * */
-		// TODO
 		// declarations
 		 new Expectations() {{
-	            new TransporterService();
-	            service.getTransporterPort(); result = port;
-	            port.getRequestContext(); result = requestCont;
-	            requestCont.put(anyString, anyString);
-	            port.ping(anyString); result="string";
+	            new UDDINaming(anyString);
 	      }};
 	      //TESTS
-	      TransporterClient clnt = new TransporterClient("placeholderURL");
-	      String ping = clnt.ping("string");
+	      BrokerPort bp = new BrokerPort("placeHolderUrl");
+	      String ping = bp.ping("string");
 	      assertEquals("error in equals","string", ping); // checks ping result
 	      new Verifications() {{
- // Verifies that zero or one invocations occurred, with the specified argument value:
-	    	  //clnt.ping(anyString);
+              // Verifies that zero or one invocations occurred, with the specified argument value:
 	      }};
 	      // asserts if needed
 	}
@@ -79,8 +74,6 @@ public class BrokerPortTest {
         @Mocked final UDDINaming uddi) // P extends the above types
         throws Exception {
 		// declarations
-		// works as template for all exceptions 		
-		//done
 		
 		final JobView j1 = new JobView();
 		j1.setJobPrice(1);
@@ -94,12 +87,10 @@ public class BrokerPortTest {
 	            service.getTransporterPort(); result = port;minTimes=0;
 	            port.getRequestContext(); result = requestCont;minTimes=0;
 	            requestCont.put(anyString, anyString); minTimes=0;
-	            uddi.list(anyString); result="T1"; minTimes=0;// check if needs result
+	            uddi.list(anyString); result= "T1"; minTimes=0;// check if needs result
 	            port.requestJob("Lisboa", "Porto", anyInt); minTimes=0; 
 	            result = j1;
 	            port.decideJob(anyString, anyBoolean); minTimes=0;
-	            //TODO verificar se sao necessarias apanhar as excecoes e usar linha a seguir
-	            //result = new InvalidPriceFault_Exception("fabricated", new InvalidPriceFault());
 	      }};
 	      BrokerPort bp = new BrokerPort("placeholderURL");
 	      assertNotNull("null broker port",bp);
@@ -116,9 +107,8 @@ public class BrokerPortTest {
 	    	  assertEquals("Preço incorreto", e.getMessage());
 	      } 
 	      new Verifications() {{
- // Verifies that zero or one invocations occurred, with the specified argument value:
+	    	  // Verifies that zero or one invocations occurred, with the specified argument value:
 	      }};
-	      // asserts if needed
 	}
 	
 	@Test
@@ -147,19 +137,14 @@ public class BrokerPortTest {
             service.getTransporterPort(); result = port;minTimes=0;
             port.getRequestContext(); result = requestCont;minTimes=0;
             requestCont.put(anyString, anyString); minTimes=0;
-            uddi.list(anyString); result="T1";minTimes=0;// check if needs result
+            uddi.list(anyString); result="T1";minTimes=0;
             port.requestJob("Lisboa", "Porto", anyInt); minTimes=0; 
             result = j1;
             port.requestJob("China", "france", anyInt); minTimes=0;
-            // caso acima n necessita de enviar excecao, pois tratamos este caso
-            // na parte do codigo do broker, 
-            // caso haja mudanca de como sao recebidas as excecoes do request do transporter 
-            // e' necessario mudar este codigo
             port.decideJob(anyString, anyBoolean); minTimes=0;
 		}};
 		
 	      //TESTS
-	      //TransporterClient clnt = new TransporterClient("placeholderURL");
 	      BrokerPort bp = new BrokerPort("placeholderURL");
 	      assertNotNull("null broker port",bp);
 	      try {
@@ -176,10 +161,36 @@ public class BrokerPortTest {
 	      } 
 	      
 	      new Verifications() {{
- // Verifies that zero or one invocations occurred, with the specified argument value:
+	    	  // Verifies that zero or one invocations occurred, with the specified argument value:
 	      }};
 	     
 	}
+	@Test
+	public  <P extends TransporterPortType & BindingProvider>
+	void testUDDIServerErrorSimulation(
+	        @Mocked final UDDINaming uddi)
+        throws Exception {
+		/*
+		 * tests uddi exceptions
+		 * */
+		 new Expectations() {{
+	            new TransporterService();
+	            uddi.list(anyString); result=  new JAXRException(); minTimes=0;// check if needs result
+	            uddi.lookup(anyString); result=  new JAXRException() ; minTimes=0;
+	      }};
+	      
+	      BrokerPort bp = new BrokerPort("placeholderURL");
+	      assertNotNull("null broker port",bp);
+	      
+	      try {
+	      	bp.requestTransport("Lisboa", "Porto", 10);
+	      	fail("Nao apanhou excepcao");
+	      }catch(UnavailableTransportFault_Exception e) {
+	    	  assertEquals("Nao existe um transporter disponivel", e.getMessage());
+	      }
+	      
+	}
+	
 	@Test
 	public <P extends TransporterPortType & BindingProvider>
 	void testRequestnsportPriceFault_Exception(
@@ -189,7 +200,6 @@ public class BrokerPortTest {
         @Mocked final Map<String,Object> requestCont) // P extends the above types
         throws Exception {
 		// declarations
-		// done
 		final JobView j1 = new JobView();
 		j1.setJobPrice(2);
 		j1.setCompanyName("T1");
@@ -203,7 +213,7 @@ public class BrokerPortTest {
 	            service.getTransporterPort(); result = port;minTimes=0;
 	            port.getRequestContext(); result = requestCont;minTimes=0;
 	            requestCont.put(anyString, anyString); minTimes=0;
-	            uddi.list(anyString); result="T1"; minTimes=0;// check if needs result
+	            uddi.list(anyString); result="T1"; minTimes=0;
 	            port.requestJob("Lisboa", "Porto", anyInt); minTimes=0; 
 	            result = j1;
 	            port.decideJob(anyString, anyBoolean); minTimes=0;
@@ -225,12 +235,12 @@ public class BrokerPortTest {
 	      }
 	      
 	      new Verifications() {{
- // Verifies that zero or one invocations occurred, with the specified argument value:
+	    	  // Verifies that zero or one invocations occurred, with the specified argument value:
 				uddi.list(anyString); minTimes=1;
 			    port.decideJob(anyString, anyBoolean); minTimes=1;
 			    port.requestJob(anyString, anyString, anyInt); minTimes=2;
 	      }};
-	      // asserts if needed
+	     
 	}
 	@Test
 	public <P extends TransporterPortType & BindingProvider>
@@ -248,8 +258,7 @@ public class BrokerPortTest {
 		j1.setJobOrigin("Lisboa");
 		j1.setJobState(null);
 		
-		//done
-		/*
+		/* 
 		 * this exception is caught when there is no transporter with an available 
 		 * transport
 		 */
@@ -264,12 +273,11 @@ public class BrokerPortTest {
             port.requestJob("Lisboa", "Porto", anyInt); minTimes=0; 
             result=j1;
             port.requestJob("Lisboa", "Braga", anyInt); minTimes=0;
-            result=null;
-            //simula que Lisboa Braga nao existe 
+            result=null;//simula que Lisboa Braga nao existe 
             port.decideJob(anyString, anyBoolean); minTimes=0;
 	      }};
 	      //TESTS
-	      //TransporterClient clnt = new TransporterClient("placeholderURL");
+	     
 	      BrokerPort bp = new BrokerPort("placeholderURL");
 	      assertNotNull("null in broker port", bp);
 	      try {
@@ -282,16 +290,16 @@ public class BrokerPortTest {
 	    	  bp.requestTransport("Lisboa", "Braga", 100);
 	    	  fail("request transport unexisting");
 	      } catch (UnavailableTransportFault_Exception e) {
-	    	  assertEquals("Nao existe um transporte despunive para as localizacoes", e.getMessage());
+	    	  assertEquals("Nao existe um transporter disponivel", e.getMessage());
 	      }
 	      
 	      new Verifications() {{
- // Verifies that zero or one invocations occurred, with the specified argument value:
+	    	  // Verifies that zero or one invocations occurred, with the specified argument value:
 				uddi.list(anyString); minTimes=1;
 			    port.decideJob(anyString, anyBoolean); minTimes=1;
 			    port.requestJob(anyString, anyString, anyInt); minTimes=1;
 	      }};
-	      // asserts if needed
+	      
 	}
 	@Test
 	public <P extends TransporterPortType & BindingProvider>
@@ -299,7 +307,7 @@ public class BrokerPortTest {
 	        @Mocked final TransporterService service,
 	        @Mocked final P port,
 	        @Mocked final UDDINaming uddi,
-	        @Mocked final Map<String,Object> requestCont) // P extends the above types
+	        @Mocked final Map<String,Object> requestCont) 
         throws Exception {
 		// declarations
 		JobView j1 = new JobView();
@@ -333,19 +341,18 @@ public class BrokerPortTest {
 	      //TESTS
 	      BrokerPort bp = new BrokerPort("placeholderURL");
 	      assertNotNull("bp Null",bp);
-		      String jV1 = bp.requestTransport("Lisboa", "Porto", 100);
-		      String jV2 = bp.requestTransport("Lisboa", "Porto", 3);
-		      String jV3 = bp.requestTransport("Lisboa", "Porto", 2);
-		      //String jV4 = bp.requestTransport("Lisboa", "Porto", 0);
-		      assertEquals("wrong jV1","1/0",jV1);
-		      assertEquals("wrong jV2","1/0",jV2);
-		      assertEquals("wrong jV3","1/0",jV3);
-		      //assertEquals("wrong jV4","1/2",jV4);
+	      String jV1 = bp.requestTransport("Lisboa", "Porto", 100);
+	      String jV2 = bp.requestTransport("Lisboa", "Porto", 3);
+	      String jV3 = bp.requestTransport("Lisboa", "Porto", 2);
+	      assertEquals("wrong jV1","1/0",jV1);
+	      assertEquals("wrong jV2","1/0",jV2);
+	      assertEquals("wrong jV3","1/0",jV3);
+		      
 	      
 	      new Verifications() {{
- // Verifies that zero or one invocations occurred, with the specified argument value:
+	    	  // Verifies that zero or one invocations occurred, with the specified argument value:
 	      }};
-	      // asserts if needed
+	      
 	}
 
 	
@@ -392,7 +399,6 @@ public class BrokerPortTest {
 	            result="placeholder";
 	            port.jobStatus(anyString); 
 	            result=j1;
-	            //result=null; // should have no effect; otherwise break from loop
 		      }};
 		      //TESTS
 		      BrokerPort bp = new BrokerPort("placeholderURL");
@@ -402,7 +408,7 @@ public class BrokerPortTest {
 		      bp.listTransports().add(T2);
 
 		      try {
-		    	  t1 = bp.viewTransport("1/0"); //TODO solved, check when T state is FAILED, then check exception
+		    	  t1 = bp.viewTransport("1/0");
 		    	  assertNotNull("null state", t1.getState());
 		    	  assertEquals("wrong state",TransportStateView.BOOKED.value(),t1.getState().value());
 		    	  assertSame("T1 t1 not same ref ", T1,t1);

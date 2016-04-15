@@ -45,29 +45,5 @@ public class BrokerClientApplication {
 		Map<String, Object> requestContext = bindingProvider.getRequestContext();
 		requestContext.put(ENDPOINT_ADDRESS_PROPERTY, endpointAddress);
 		
-		String id = port.requestTransport("Lisboa", "Coimbra", 21);
-		port.requestTransport("Lisboa", "Coimbra", 21);
-		System.out.println(id);
-		TransportView s = port.viewTransport(id);
-		System.out.println(s.getDestination());
-		System.out.println(s.getOrigin());
-		System.out.println(s.getId());
-		System.out.println(s.getTransporterCompany());
-		System.out.println(s.getState().value());
-		System.out.println(s.getPrice());
-
-		try {
-			  Thread.sleep(5000);
-			} catch (InterruptedException ie) {
-			    //Handle exception
-			}
-		
-		s = port.viewTransport(id);
-		System.out.println(s.getDestination());
-		System.out.println(s.getOrigin());
-		System.out.println(s.getId());
-		System.out.println(s.getTransporterCompany());
-		System.out.println(s.getState().value());
-		System.out.println(s.getPrice());
 	}
 }

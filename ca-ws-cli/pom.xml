@@ -5,11 +5,20 @@
     <!-- http://maven.apache.org/pom.html#Quick_Overview -->
 
     <groupId>pt.upa.t60</groupId>
-    <artifactId>broker-ws</artifactId>
+    <artifactId>ca-ws-cli</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>${project.artifactId}</name>
+
+    <dependencies>
+       <!-- UDDI Naming -->
+       <dependency>
+           <groupId>pt.ulisboa.tecnico.sdis</groupId>
+           <artifactId>uddi-naming</artifactId>
+           <version>1.0</version>
+       </dependency>
+    </dependencies>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -18,65 +27,17 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
 
-        <wsdl.directory>src/main/resources</wsdl.directory>
-        <wsdl.filename>broker.1_0.wsdl</wsdl.filename>
+        <!-- WSDL is required for client code generation -->
+        <ws.url>http://localhost:8080/ca-ws/endpoint</ws.url>
+        <wsdl.url>${ws.url}?WSDL</wsdl.url>
 
-        <mainclass>pt.upa.broker.ws.BrokerMain</mainclass>
+        <mainclass>example.ws.cli.CAClient</mainclass>
 
-        <ws.url>http://localhost:8080/broker-ws/endpoint</ws.url>
-
-        <ws.name>UpaBroker</ws.name>
         <uddi.url>http://localhost:9090</uddi.url>
+        <ws.name>UpaCA</ws.name>
     </properties>
 
-    <dependencies>
-       <!-- JAX-WS -->
-       <dependency>
-           <groupId>com.sun.xml.ws</groupId>
-           <artifactId>jaxws-rt</artifactId>
-           <version>2.2.10</version>
-       </dependency>
-       <!-- JMockit - must appear before JUnit -->
-       <dependency>
-           <groupId>org.jmockit</groupId>
-           <artifactId>jmockit</artifactId>
-           <version>1.21</version>
-           <scope>test</scope>
-       </dependency>
-       <!-- JUnit -->
-       <dependency>
-           <groupId>junit</groupId>
-           <artifactId>junit</artifactId>
-           <version>4.12</version>
-           <scope>test</scope>
-       </dependency>
-       <!-- UDDI Naming -->
-       <dependency>
-           <groupId>pt.ulisboa.tecnico.sdis</groupId>
-           <artifactId>uddi-naming</artifactId>
-           <version>1.0</version>
-       </dependency>
-       <!-- Transporter cliente -->
-       <dependency>
-       		<groupId>pt.upa.t60</groupId>
-    		  <artifactId>transporter-ws-cli</artifactId>
-    		  <version>1.0-SNAPSHOT</version>
-       </dependency>
-   </dependencies>
-
     <build>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-            </resource>
-        </resources>
-        <testResources>
-            <testResource>
-                <directory>src/test/resources</directory>
-                <filtering>true</filtering>
-            </testResource>
-        </testResources>
         <plugins>
             <plugin>
                 <groupId>org.jvnet.jax-ws-commons</groupId>
@@ -91,10 +52,9 @@
                 </executions>
                 <configuration>
                     <!-- https://jax-ws-commons.java.net/jaxws-maven-plugin/wsimport-mojo.html -->
-                    <wsdlDirectory>${wsdl.directory}</wsdlDirectory>
-                    <wsdlFiles>
-                        <wsdlFile>${wsdl.filename}</wsdlFile>
-                    </wsdlFiles>
+                    <wsdlUrls>
+                        <wsdlUrl>${wsdl.url}</wsdlUrl>
+                    </wsdlUrls>
                 </configuration>
                 <dependencies>
                     <dependency>
@@ -122,7 +82,6 @@
                     <arguments>
                         <argument>${uddi.url}</argument>
                         <argument>${ws.name}</argument>
-                        <argument>${ws.url}</argument>
                     </arguments>
                 </configuration>
             </plugin>
@@ -147,18 +106,7 @@
                     </programs>
                 </configuration>
             </plugin>
-            <plugin>
-               <artifactId>maven-failsafe-plugin</artifactId>
-               <version>2.19.1</version>
-               <executions>
-                   <execution>
-                       <goals>
-                           <goal>integration-test</goal>
-                           <goal>verify</goal>
-                       </goals>
-                   </execution>
-               </executions>
-           </plugin>
         </plugins>
     </build>
+
 </project>

@@ -176,7 +176,6 @@ public class BrokerPortTest {
 		 new Expectations() {{
 	            new TransporterService();
 	            uddi.list(anyString); result=  new JAXRException(); minTimes=0;// check if needs result
-	            uddi.lookup(anyString); result=  new JAXRException() ; minTimes=0;
 	      }};
 	      
 	      BrokerPort bp = new BrokerPort("placeholderURL");

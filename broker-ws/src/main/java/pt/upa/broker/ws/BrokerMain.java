@@ -18,10 +18,15 @@ public class BrokerMain {
 		String uddiURL = args[0];
 		String name = args[1];
 		String url = args[2];
+		int type = Integer.parseInt(args[3]); // se o type for 0 o servidor é o principal se for 1 é uma replica
 
 		Endpoint endpoint = null;
 		UDDINaming uddiNaming = null;
 		try {
+			if (type == 1) {
+				name = "UpaBrokerReplica";
+			}
+
 			BrokerPort port = new BrokerPort(uddiURL);
 			endpoint = Endpoint.create(port);
 
@@ -34,6 +39,9 @@ public class BrokerMain {
 			uddiNaming = new UDDINaming(uddiURL);
 			uddiNaming.rebind(name, url);
 
+			if (type == 1){
+				port.checkMainServer();
+			}
 			// wait
 			System.out.println("Awaiting connections");
 			System.out.println("Press enter to shutdown");

@@ -1,5 +1,6 @@
 #!/bin/sh
 
+
 # author: Professores de Sistemas Distribuídos - Instituto Superior Técnico
 ################################################################################
 # Script to generate signed X509 certificates

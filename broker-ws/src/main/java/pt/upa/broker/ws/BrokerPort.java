@@ -1,13 +1,17 @@
 package pt.upa.broker.ws;
 
 
+import static javax.xml.ws.BindingProvider.ENDPOINT_ADDRESS_PROPERTY;
+
 import java.util.*;
+
 import javax.jws.WebService;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
 import pt.upa.transporter.ws.*;
 import pt.upa.transporter.ws.cli.*;
 
 import javax.xml.registry.*;
+import javax.xml.ws.BindingProvider;
 
 @WebService(
     endpointInterface="pt.upa.broker.ws.BrokerPortType",
@@ -20,12 +24,13 @@ import javax.xml.registry.*;
 
 public class BrokerPort implements BrokerPortType {
 
+  private BrokerPortType brokerReplica;
   private UDDINaming uddiNaming;
   private List<TransportView> contratos = new ArrayList<TransportView>();
   private List<String> cidades = new ArrayList<String>(Arrays.asList("Porto","Braga","Viana do Castelo","Vila Real","Bragança",
                                                               "Lisboa","Leiria","Santarém","Castelo Branco","Coimbra","Aveiro","Viseu","Guarda",
                                                               "Setúbal","Évora","Portalegre","Beja","Faro"));
-
+  
   public BrokerPort(String uddiURL) {
     /*Broker port cria uma instancia do UDDINaming e atribui a variavel global uddiNaming*/
 	try {
@@ -34,6 +39,7 @@ public class BrokerPort implements BrokerPortType {
     	System.out.printf("Caught exception: %s%n", e);
     	e.printStackTrace();
     }
+	
   }
 
   public String ping(String name) {
@@ -195,6 +201,7 @@ public class BrokerPort implements BrokerPortType {
 						}else {
 							y.setState(TransportStateView.fromValue(v));
 						}
+						mainUpdateTranspots(y);
 					}
 					return y;
 					
@@ -238,10 +245,92 @@ public class BrokerPort implements BrokerPortType {
 				continue;
 			}
 		}
+		mainUpdateClearTransports(); //faz o clear no server replica
 		
 	} catch (JAXRException e) {
 		System.out.printf("Caught exception: %s%n", e);
 		e.printStackTrace();
 	}
   }
+
+  private void mainUpdateTranspots(TransportView job){
+	  //Metodo usado pelo Servidor principal para fazer update da replica 
+	  connectReplica();
+	  brokerReplica.updateTranspots(job);
+  }
+  
+  private void mainUpdateClearTransports() {
+	  connectReplica();
+	  brokerReplica.updateClearTransports();
+  }
+  
+  private void connectReplica(){  
+		if (brokerReplica == null) {
+			String brokerReplicaUrl = null;
+			try {
+				brokerReplicaUrl = uddiNaming.lookup("UpaBrokerReplica");
+			} catch (JAXRException e) {
+				System.out.println("error in lookup");
+			}
+			BrokerService service = new BrokerService(); 
+			brokerReplica = service.getBrokerPort();
+			BindingProvider bindingProvider = (BindingProvider) brokerReplica;
+			Map<String, Object> requestContext = bindingProvider.getRequestContext();
+			requestContext.put(ENDPOINT_ADDRESS_PROPERTY, brokerReplicaUrl);
+		}
+	  }
+
+  /*------------------------Metodos usados pelo UpaBrokerReplica ---------------------------*/
+  public class InnerClass extends TimerTask {
+		public void run() {
+			checkMainServer();
+		}
+	}
+
+  public void checkMainServer() {
+	  String brokerUrl = null;
+	  try {
+		brokerUrl = uddiNaming.lookup("UpaBroker");
+	} catch (JAXRException e) {
+		System.out.println("error in lookup");
+	}
+	  
+	BrokerService service = new BrokerService(); 
+	BrokerPortType port = service.getBrokerPort();
+	BindingProvider bindingProvider = (BindingProvider) port;
+	Map<String, Object> requestContext = bindingProvider.getRequestContext();
+	requestContext.put(ENDPOINT_ADDRESS_PROPERTY, brokerUrl);
+	
+	if(port.ping("test").equals("test")) {
+		//operacao feita se o servidor principal do broker estiver activo 
+		Timer timer = new Timer(true);
+		TimerTask timerTask = new InnerClass();
+		timer.schedule(timerTask,1000); 
+	} else{
+		String brokerReplicaUrl;
+		try {
+			brokerReplicaUrl = uddiNaming.lookup("UpaBrokerReplica");
+			uddiNaming.rebind("UpaBroker", brokerReplicaUrl);
+		} catch (JAXRException e) {
+			System.out.println("error in lookup or rebind");
+		}	
+	} 
+  }
+  
+    
+  public void updateTranspots(TransportView job) { 
+	  for (TransportView j : contratos){
+		 if(job.getId().equals(j.getId())) {
+			 j.setState(job.getState()); // se o trabalho ja estiver nos contratos quer dizer que é para mudar o estado 
+			 return; 
+		 } 
+	  }
+	 
+	  contratos.add(job); // se nao tiver adiciona-se 
+  }
+  
+  public void updateClearTransports(){
+	  contratos = null; 
+  }
+
 }

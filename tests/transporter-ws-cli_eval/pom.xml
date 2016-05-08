@@ -1,11 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <!-- http://maven.apache.org/pom.html#Quick_Overview -->
 
-    <groupId>pt.upa.t60</groupId>
-    <artifactId>transporter-ws-cli</artifactId>
+    <groupId>pt.upa</groupId>
+    <artifactId>transporter-ws-cli_eval</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
@@ -23,21 +22,24 @@
 
         <mainclass>pt.upa.transporter.TransporterClientApplication</mainclass>
 
-        <ws.name>UpaTransporter</ws.name>
+        <ws.url>http://localhost:8081/transporter-ws/endpoint</ws.url>
+
+        <ws.name>UpaTransporter1</ws.name>
         <uddi.url>http://localhost:9090</uddi.url>
     </properties>
 
     <dependencies>
-    	<dependency>
-            <groupId>example</groupId>
-            <artifactId>ws-handlers</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
         <!-- JAX-WS -->
         <dependency>
             <groupId>com.sun.xml.ws</groupId>
             <artifactId>jaxws-rt</artifactId>
             <version>2.2.10</version>
+        </dependency>
+        <!-- UDDI -->
+        <dependency>
+            <groupId>pt.ulisboa.tecnico.sdis</groupId>
+            <artifactId>uddi-naming</artifactId>
+            <version>1.0</version>
         </dependency>
         <!-- JMockit - must appear before JUnit -->
         <dependency>
@@ -53,12 +55,6 @@
             <version>4.12</version>
             <scope>test</scope>
         </dependency>
-        <!-- UDDI Naming -->
-       <dependency>
-           <groupId>pt.ulisboa.tecnico.sdis</groupId>
-           <artifactId>uddi-naming</artifactId>
-           <version>1.0</version>
-       </dependency>
     </dependencies>
 
     <build>
@@ -88,10 +84,10 @@
                 </executions>
                 <configuration>
                     <!-- https://jax-ws-commons.java.net/jaxws-maven-plugin/wsimport-mojo.html -->
-                    <wsdlDirectory>${wsdl.directory}</wsdlDirectory>
-                    <wsdlFiles>
-                        <wsdlFile>${wsdl.filename}</wsdlFile>
-                    </wsdlFiles>
+					<wsdlDirectory>${wsdl.directory}</wsdlDirectory>
+					<wsdlFiles>
+						<wsdlFile>${wsdl.filename}</wsdlFile>
+					</wsdlFiles>
                 </configuration>
                 <dependencies>
                     <dependency>
@@ -129,8 +125,7 @@
                     <killAfter>-1</killAfter>
                     <mainClass>${mainclass}</mainClass>
                     <arguments>
-                        <argument>${uddi.url}</argument>
-                        <argument>${ws.name}</argument>
+                        <argument>${ws.url}</argument>
                     </arguments>
                 </configuration>
             </plugin>

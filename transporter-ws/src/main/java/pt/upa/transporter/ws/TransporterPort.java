@@ -3,6 +3,7 @@ package pt.upa.transporter.ws;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
+import javax.jws.HandlerChain;
 import javax.jws.WebService;
 
 @WebService(
@@ -13,6 +14,8 @@ import javax.jws.WebService;
 	    targetNamespace="http://ws.transporter.upa.pt/",
 	    serviceName="TransporterService"
 	)
+@HandlerChain(file = "/ws-handler-chain-binding.xml") 
+// /src/jaxws
 
 public class TransporterPort implements TransporterPortType {
 

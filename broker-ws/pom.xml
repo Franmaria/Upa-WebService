@@ -23,7 +23,10 @@
 
         <mainclass>pt.upa.broker.ws.BrokerMain</mainclass>
 
-        <ws.url>http://localhost:8080/broker-ws/endpoint</ws.url>
+        <!-- type of server 0 - main server, 1 - replica - redefine using -D option - e.g. mvn -Dws.type=2 exec:java -->
+        <ws.type>0</ws.type>
+        
+        <ws.url>http://localhost:809${ws.type}/broker-ws/endpoint</ws.url>
 
         <ws.name>UpaBroker</ws.name>
         <uddi.url>http://localhost:9090</uddi.url>
@@ -123,6 +126,7 @@
                         <argument>${uddi.url}</argument>
                         <argument>${ws.name}</argument>
                         <argument>${ws.url}</argument>
+                        <argument>${ws.type}</argument>
                     </arguments>
                 </configuration>
             </plugin>

@@ -201,6 +201,7 @@ public class BrokerPort implements BrokerPortType {
 						}else {
 							y.setState(TransportStateView.fromValue(v));
 						}
+						mainUpdateTranspots(y);
 					}
 					return y;
 					
@@ -244,6 +245,7 @@ public class BrokerPort implements BrokerPortType {
 				continue;
 			}
 		}
+		mainUpdateClearTransports(); //faz o clear no server replica
 		
 	} catch (JAXRException e) {
 		System.out.printf("Caught exception: %s%n", e);
@@ -251,7 +253,34 @@ public class BrokerPort implements BrokerPortType {
 	}
   }
 
-/*------------------------Metodos usados pelo UpaBrokerReplica ou para o contactar ---------------------------*/
+  private void mainUpdateTranspots(TransportView job){
+	  //Metodo usado pelo Servidor principal para fazer update da replica 
+	  connectReplica();
+	  brokerReplica.updateTranspots(job);
+  }
+  
+  private void mainUpdateClearTransports() {
+	  connectReplica();
+	  brokerReplica.updateClearTransports();
+  }
+  
+  private void connectReplica(){  
+		if (brokerReplica == null) {
+			String brokerReplicaUrl = null;
+			try {
+				brokerReplicaUrl = uddiNaming.lookup("UpaBrokerReplica");
+			} catch (JAXRException e) {
+				System.out.println("error in lookup");
+			}
+			BrokerService service = new BrokerService(); 
+			brokerReplica = service.getBrokerPort();
+			BindingProvider bindingProvider = (BindingProvider) brokerReplica;
+			Map<String, Object> requestContext = bindingProvider.getRequestContext();
+			requestContext.put(ENDPOINT_ADDRESS_PROPERTY, brokerReplicaUrl);
+		}
+	  }
+
+  /*------------------------Metodos usados pelo UpaBrokerReplica ---------------------------*/
   public class InnerClass extends TimerTask {
 		public void run() {
 			checkMainServer();
@@ -288,27 +317,20 @@ public class BrokerPort implements BrokerPortType {
 	} 
   }
   
-  private void connectReplica(){  
-	if (brokerReplica == null) {
-		String brokerReplicaUrl = null;
-		try {
-			brokerReplicaUrl = uddiNaming.lookup("UpaBrokerReplica");
-		} catch (JAXRException e) {
-			System.out.println("error in lookup");
-		}
-		BrokerService service = new BrokerService(); 
-		brokerReplica = service.getBrokerPort();
-		BindingProvider bindingProvider = (BindingProvider) brokerReplica;
-		Map<String, Object> requestContext = bindingProvider.getRequestContext();
-		requestContext.put(ENDPOINT_ADDRESS_PROPERTY, brokerReplicaUrl);
-	}
+    
+  public void updateTranspots(TransportView job) { 
+	  for (TransportView j : contratos){
+		 if(job.getId().equals(j.getId())) {
+			 j.setState(job.getState()); // se o trabalho ja estiver nos contratos quer dizer que é para mudar o estado 
+			 return; 
+		 } 
+	  }
+	 
+	  contratos.add(job); // se nao tiver adiciona-se 
   }
   
-  public void upadate(TransportView job) {
-	 for (TransportView j : contratos){
-		 if 
-	 }
-	  contratos.add(job);
+  public void updateClearTransports(){
+	  contratos = null; 
   }
 
 }

@@ -28,6 +28,12 @@
     </properties>
 
     <dependencies>
+            <!-- CA -->
+    	<dependency>
+    		<groupId>pt.upa.t60</groupId>
+		    <artifactId>ca-ws-cli</artifactId>
+		    <version>1.0-SNAPSHOT</version>
+	    </dependency>
     	<dependency>
             <groupId>example</groupId>
             <artifactId>ws-handlers</artifactId>

@@ -4,7 +4,7 @@
             <handler-class>pt.upa.transporter.ws.handler.CertCheckHandlerClient</handler-class>
         </handler>
 		<handler>
-			<handler-class>pt.upa.transporter.ws.handler.ClientHandler.java</handler-class>
+			<handler-class>pt.upa.transporter.ws.handler.ClientHandler</handler-class>
 		</handler>
 		<handler>
 			<handler-class>example.ws.handler.LoggingHandler</handler-class>

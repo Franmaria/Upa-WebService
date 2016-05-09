@@ -3,17 +3,24 @@ package pt.upa.broker.ws;
 
 import static javax.xml.ws.BindingProvider.ENDPOINT_ADDRESS_PROPERTY;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import javax.jws.WebService;
-import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
-import pt.upa.transporter.ws.*;
-import pt.upa.transporter.ws.cli.TransporterClient;
-import pt.upa.transporter.ws.handler;
-
-
-import javax.xml.registry.*;
+import javax.xml.registry.JAXRException;
 import javax.xml.ws.BindingProvider;
+
+import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
+import pt.upa.transporter.ws.BadJobFault_Exception;
+import pt.upa.transporter.ws.BadLocationFault_Exception;
+import pt.upa.transporter.ws.BadPriceFault_Exception;
+import pt.upa.transporter.ws.JobView;
+import pt.upa.transporter.ws.cli.TransporterClient;
+import pt.upa.transporter.ws.handler.ClientHandler;
 
 @WebService(
     endpointInterface="pt.upa.broker.ws.BrokerPortType",
@@ -111,7 +118,7 @@ public class BrokerPort implements BrokerPortType {
 			JobView s;
 				
 			try {
-				ServerHandler.REQUEST_PROPERTY_ORGANIZATION = urls.get(x);
+				ClientHandler.REQUEST_PROPERTY_ORGANIZATION = urls.get(x);
 				trans = new TransporterClient(urls.get(x));	
 				s = trans.requestJob(origin, destination, price);
 	   

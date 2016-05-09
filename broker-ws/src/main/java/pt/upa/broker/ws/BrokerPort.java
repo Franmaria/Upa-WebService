@@ -8,7 +8,9 @@ import java.util.*;
 import javax.jws.WebService;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
 import pt.upa.transporter.ws.*;
-import pt.upa.transporter.ws.cli.*;
+import pt.upa.transporter.ws.cli.TransporterClient;
+import pt.upa.transporter.ws.handler;
+
 
 import javax.xml.registry.*;
 import javax.xml.ws.BindingProvider;
@@ -108,7 +110,7 @@ public class BrokerPort implements BrokerPortType {
 			JobView s;
 				
 			try {
-				
+				ServerHandler.REQUEST_PROPERTY_ORGANIZATION = urls.get(x);
 				trans = new TransporterClient(urls.get(x));	
 				s = trans.requestJob(origin, destination, price);
 	   

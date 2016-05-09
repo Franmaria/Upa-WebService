@@ -12,6 +12,31 @@
     <name>${project.artifactId}</name>
 
     <dependencies>
+    <dependency>
+            <groupId>example</groupId>
+            <artifactId>ws-handlers</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <!-- JAX-WS -->
+        <dependency>
+            <groupId>com.sun.xml.ws</groupId>
+            <artifactId>jaxws-rt</artifactId>
+            <version>2.2.10</version>
+        </dependency>
+        <!-- JMockit - must appear before JUnit -->
+        <dependency>
+            <groupId>org.jmockit</groupId>
+            <artifactId>jmockit</artifactId>
+            <version>1.21</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- JUnit -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
        <!-- UDDI Naming -->
        <dependency>
            <groupId>pt.ulisboa.tecnico.sdis</groupId>
@@ -28,10 +53,10 @@
         <maven.compiler.target>1.8</maven.compiler.target>
 
         <!-- WSDL is required for client code generation -->
-        <ws.url>http://localhost:8080/ca-ws/endpoint</ws.url>
+        <ws.url>http://localhost:8079/ca-ws/endpoint</ws.url>
         <wsdl.url>${ws.url}?WSDL</wsdl.url>
 
-        <mainclass>example.ws.cli.CAClient</mainclass>
+        <mainclass>example.ws.cli.CAClientApplication</mainclass>
 
         <uddi.url>http://localhost:9090</uddi.url>
         <ws.name>UpaCA</ws.name>
@@ -90,6 +115,7 @@
                 <artifactId>appassembler-maven-plugin</artifactId>
                 <version>1.10</version>
                 <executions>
+                    
                     <execution>
                         <phase>install</phase>
                         <goals>

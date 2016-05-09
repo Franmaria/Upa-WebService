@@ -95,6 +95,7 @@ public class BrokerPort implements BrokerPortType {
     job.setDestination(destination);
     job.setOrigin(origin);
     contratos.add(job);
+    //TODO mainUpdateTranspots(job);
     
     boolean existeOferta = false; 
 	String url = null; // variavel que guarda o url da melhor oferta ou no caso de nenhuma oferta ser aceite da primeria valida 
@@ -160,12 +161,11 @@ public class BrokerPort implements BrokerPortType {
     		job.setState(TransportStateView.FAILED);
     		System.out.printf("Caught exception: %s%n", e);
     		e.printStackTrace();
-    		
         }
     	
     } else{
     	job.setState(TransportStateView.FAILED);
-    	
+    	mainUpdateTranspots(job);
     	if(existeOferta) { // se existir pelo menos uma oferta quer dizer que nao foi encontrada nenhuma proposta com o price menor que o maximo 
     		UnavailableTransportPriceFault f = new UnavailableTransportPriceFault();
     		f.setBestPriceFound(job.getPrice());
@@ -178,7 +178,9 @@ public class BrokerPort implements BrokerPortType {
     	}
     }
     
+	mainUpdateTranspots(job);
     return job.getId();
+    
   }
 
   public TransportView viewTransport(String id) throws UnknownTransportFault_Exception {
@@ -255,8 +257,10 @@ public class BrokerPort implements BrokerPortType {
 
   private void mainUpdateTranspots(TransportView job){
 	  //Metodo usado pelo Servidor principal para fazer update da replica 
-	  connectReplica();
-	  brokerReplica.updateTranspots(job);
+	  if(job != null){	
+	  	connectReplica();
+	  	brokerReplica.updateTranspots(job);
+	  }
   }
   
   private void mainUpdateClearTransports() {
@@ -291,46 +295,48 @@ public class BrokerPort implements BrokerPortType {
 	  String brokerUrl = null;
 	  try {
 		brokerUrl = uddiNaming.lookup("UpaBroker");
-	} catch (JAXRException e) {
-		System.out.println("error in lookup");
-	}
-	  
-	BrokerService service = new BrokerService(); 
-	BrokerPortType port = service.getBrokerPort();
-	BindingProvider bindingProvider = (BindingProvider) port;
-	Map<String, Object> requestContext = bindingProvider.getRequestContext();
-	requestContext.put(ENDPOINT_ADDRESS_PROPERTY, brokerUrl);
-	
-	if(port.ping("test").equals("test")) {
-		//operacao feita se o servidor principal do broker estiver activo 
+		
+		BrokerService service = new BrokerService(); 
+		BrokerPortType port = service.getBrokerPort();
+		BindingProvider bindingProvider = (BindingProvider) port;
+		Map<String, Object> requestContext = bindingProvider.getRequestContext();
+		requestContext.put(ENDPOINT_ADDRESS_PROPERTY, brokerUrl);
+		
+		port.ping("test");
+		
 		Timer timer = new Timer(true);
 		TimerTask timerTask = new InnerClass();
-		timer.schedule(timerTask,1000); 
-	} else{
-		String brokerReplicaUrl;
+		timer.schedule(timerTask,3000); 
+	  } catch (JAXRException e) {
+		  replaceMainBroker();
+	  } 
+  }
+  
+  private void replaceMainBroker(){
+	  String brokerReplicaUrl;
 		try {
 			brokerReplicaUrl = uddiNaming.lookup("UpaBrokerReplica");
 			uddiNaming.rebind("UpaBroker", brokerReplicaUrl);
-		} catch (JAXRException e) {
+		} catch (JAXRException er) {
 			System.out.println("error in lookup or rebind");
-		}	
-	} 
+		}
   }
   
     
   public void updateTranspots(TransportView job) { 
-	  for (TransportView j : contratos){
-		 if(job.getId().equals(j.getId())) {
-			 j.setState(job.getState()); // se o trabalho ja estiver nos contratos quer dizer que é para mudar o estado 
-			 return; 
-		 } 
+	  if(job.getId() != null){	
+		  for (TransportView j : contratos){
+		  	if(job.getId().equals(j.getId())) {
+		  		j.setState(job.getState()); // se o trabalho ja estiver nos contratos quer dizer que é para mudar o estado 
+		  		return; 
+		  	} 
+		  }
 	  }
-	 
-	  contratos.add(job); // se nao tiver adiciona-se 
+	  contratos.add(job); // se nao tiver adiciona-se
   }
   
   public void updateClearTransports(){
-	  contratos = null; 
+	  contratos = new ArrayList<TransportView>(); 
   }
 
 }

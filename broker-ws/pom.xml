@@ -23,7 +23,7 @@
 
         <mainclass>pt.upa.broker.ws.BrokerMain</mainclass>
 
-        <!-- type of server 0 - main server, 1 - replica - redefine using -D option - e.g. mvn -Dws.type=2 exec:java -->
+        <!-- type of server 0 - main server, 1 - replica - redefine using -D option - e.g. mvn -Dws.type=1 exec:java -->
         <ws.type>0</ws.type>
         
         <ws.url>http://localhost:809${ws.type}/broker-ws/endpoint</ws.url>

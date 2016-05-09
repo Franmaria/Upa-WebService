@@ -2,7 +2,7 @@ package pt.upa.broker;
 
 import static javax.xml.ws.BindingProvider.ENDPOINT_ADDRESS_PROPERTY;
 
-
+import java.util.List;
 import java.util.Map;
 
 import javax.xml.ws.BindingProvider;
@@ -10,6 +10,8 @@ import javax.xml.ws.BindingProvider;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
 import pt.upa.broker.ws.BrokerPortType;
 import pt.upa.broker.ws.BrokerService;
+import pt.upa.broker.ws.TransportView;
+import pt.upa.broker.ws.cli.BrokerClient;
 
 public class BrokerClientApplication {
 
@@ -44,6 +46,26 @@ public class BrokerClientApplication {
 		BindingProvider bindingProvider = (BindingProvider) port;
 		Map<String, Object> requestContext = bindingProvider.getRequestContext();
 		requestContext.put(ENDPOINT_ADDRESS_PROPERTY, endpointAddress);
+		
+		String url = uddiNaming.lookup("UpaBroker");
+		BrokerClient broker = new BrokerClient(url);
+		
+		List<TransportView> list = broker.listTransports();
+		if (list != null) {
+			for(TransportView t: list ){
+				System.out.println(t.getId());
+			}
+		}
+		
+		broker.requestTransport("Lisboa", "Coimbra", 20);
+		broker.requestTransport("Lisboa", "Coimbra", 30);
+		
+		list = broker.listTransports();
+		if (list != null) {
+			for(TransportView t: list ){
+				System.out.println(t.getId());
+			}
+		}
 		
 	}
 }

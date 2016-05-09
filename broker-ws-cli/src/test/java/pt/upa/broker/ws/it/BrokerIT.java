@@ -149,7 +149,7 @@ public class BrokerIT {
 		} // T2 Lisboa - Beja
     	
     	try {
-    		Thread.sleep(5000);
+    		Thread.sleep(6500);
 		} catch (InterruptedException ie) { // da excecao porque e' criado um novo timer? verificar
 			System.out.println(ie);
 		}

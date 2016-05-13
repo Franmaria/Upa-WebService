@@ -25,24 +25,24 @@ import pt.upa.broker.ws.UnknownTransportFault_Exception;
 public class BrokerClient {
 
 private BrokerPortType port;
-private String uddiURL; 
+private String uddiURL;  	
+	
 	public BrokerClient(String uddiUrl) {
 		uddiURL = uddiUrl; 
 		makeConection(uddiUrl);
 	}
 	
 	public String ping(String name) {
-		
 		try{ 
 			return port.ping(name);
-		}catch(WebServiceException wse){
+		}catch(WebServiceException wse){	
 			makeConection(uddiURL);
 			if(name.equals("kill")){ // sereve para nao matar tambem a replica 
 				return "morto"; 
-			}else 
+			} else{ 
 				return ping(name);
+			}	
 		}
-		 
 	}
 	
 	public String requestTransport(String origin, String destination, int price) throws InvalidPriceFault_Exception, UnavailableTransportFault_Exception,
@@ -52,6 +52,7 @@ private String uddiURL;
 		}catch(WebServiceException wse){
 			makeConection(uddiURL);
 			return requestTransport(origin, destination, price);
+			
 		}
 	}
 	
@@ -68,8 +69,8 @@ private String uddiURL;
 		try{
 			return port.listTransports();
 		}catch(WebServiceException wse){
-			makeConection(uddiURL);
-			return listTransports();
+				makeConection(uddiURL);
+				return listTransports();
 		}
 	}
 	
@@ -85,14 +86,13 @@ private String uddiURL;
 	private void makeConection(String uddiUrl){
 		UDDINaming uddiNaming;
 		String url = null; 
-		
-		
 		try {
 			uddiNaming = new UDDINaming(uddiUrl);
 			url = uddiNaming.lookup("UpaBroker");
 		} catch (JAXRException e) {
-			e.printStackTrace();
+			return; 
 		}
+		
 		try {
 			BrokerService service = new BrokerService(); 
 			port = service.getBrokerPort();
@@ -100,7 +100,7 @@ private String uddiURL;
 			Map<String, Object> requestContext = bindingProvider.getRequestContext();
 			requestContext.put(ENDPOINT_ADDRESS_PROPERTY, url);
 			
-			int receiveTimeout = 2000;
+			int receiveTimeout = 3000;
 	        // The receive timeout property has alternative names
 	        // Again, set them all to avoid compability issues
 	        final List<String> RECV_TIME_PROPS = new ArrayList<String>();
@@ -114,8 +114,5 @@ private String uddiURL;
 		} catch (Exception e){
 			return; 
 		}
-
-        
-	}
-	
+	}	
 }

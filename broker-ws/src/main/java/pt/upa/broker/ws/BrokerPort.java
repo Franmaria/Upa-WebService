@@ -333,11 +333,11 @@ public class BrokerPort implements BrokerPortType {
 	  }
        
 	  try {
-	
+		  
 		brokerPort.ping("test");
 		Timer timer = new Timer(true);
 		TimerTask timerTask = new InnerClass();
-		timer.schedule(timerTask,3000);
+		timer.schedule(timerTask,4000);
 		
        } catch(WebServiceException wse){
     	   replaceMainBroker();

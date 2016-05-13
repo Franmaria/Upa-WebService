@@ -303,12 +303,14 @@ public class BrokerIT {
 		}
     	
     	try { // espera que os trabalhos mudem de estado nos trasporters 
-			 Thread.sleep(6500);
+			 Thread.sleep(6550);
 		}catch (InterruptedException e) {
 			System.out.printf("Caught exception: %s%n", e);
 			e.printStackTrace();
 		}
+    	
     	TransportView state = null;
+    	
     	try {
 			state = bp.viewTransport(job1); //o estado do job1 vai mudar 
 		} catch (UnknownTransportFault_Exception e) {
@@ -322,6 +324,7 @@ public class BrokerIT {
     	try{	
     		
     		list = bp.listTransports();
+    	
     	}catch(Exception e){
     		fail("caught exception"); // se apanhar excepcao a troca para a replica nao foi bem feita
     	}
@@ -345,6 +348,38 @@ public class BrokerIT {
     	
     	if(!state.getState().equals(state2.getState())) {
     		fail("o estado nao mudou na replica");// teste para ver se quando o estado muda no principal na replica tambem muda 
-    	}  	
+    	} 
+    	
+    	setUp();
+    	test1();
+    	tearDown();
+    	
+    	setUp();
+    	test2();
+    	tearDown();
+    	
+    	setUp();
+    	test3();
+    	tearDown();
+    	
+    	setUp();
+    	test4();
+    	tearDown();
+    	
+    	setUp();
+    	test5();
+    	tearDown();
+    	
+    	setUp();
+    	test6();
+    	tearDown();
+    	
+    	setUp();
+    	test7();
+    	tearDown();
+    	
+    	setUp();
+    	test8();
+    	tearDown();
     }
 }

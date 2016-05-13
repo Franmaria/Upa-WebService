@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -127,19 +128,20 @@ public class BrokerPort implements BrokerPortType {
     
 	
     List<String> urls;
-	try {
-		//urls = new ArrayList<String>(uddiNaming.list("UpaTransporter%"));
-		uddiNaming.list("UpaTransporter%");
-		urls = new ArrayList<String>();
-		urls.add(uddiNaming.lookup("UpaTransporter1"));
-		urls.add(uddiNaming.lookup("UpaTransporter2"));
+    int  category;
+		try{
+			urls = new ArrayList<String>(uddiNaming.list("UpaTransporter%"));
+		
 		for(x = 0;x < urls.size(); x++){
 			JobView s;
 				
 			try {
-				// TODO em vez de escrever diretamente para o handler criar variavel estatica em brokerApplication
+				// TODO em vez de escrever diretamente para o handcler criar variavel estatica em brokerApplication
 				// e em broker application enviar para handler
-				String nome = "UpaTransporter" + (x+1);
+				category=Integer.parseInt(urls.get(x).replaceAll("[\\D]",""))%10;
+				System.out.println(category);
+				System.out.println(urls.get(x));
+				String nome = "UpaTransporter" + category;
 				trans = new TransporterClient(urls.get(x),nome);	
 				s = trans.requestJob(origin, destination, price);
 	   
@@ -264,17 +266,17 @@ public class BrokerPort implements BrokerPortType {
 	
 	List<String> urls;
 	TransporterClient trans; 
-	
+	int category;
 	try {
-		//urls = new ArrayList<String>(uddiNaming.list("UpaTransporter%"));
-		uddiNaming.list("UpaTransporter%");
-		urls = new ArrayList<String>();
-		urls.add(uddiNaming.lookup("UpaTransporter1"));
-		urls.add(uddiNaming.lookup("UpaTransporter2"));
+		urls = new ArrayList<String>(uddiNaming.list("UpaTransporter%"));
+		
+		//urls.add(uddiNaming.lookup("UpaTransporter1"));
+		//urls.add(uddiNaming.lookup("UpaTransporter2"));
 
 		for(int i=0; i<urls.size();i++) {
 			try {
-				String nome = "UpaTransporter" + (i+1);
+				category=Integer.parseInt(urls.get(i).replaceAll("[\\D]",""))%10;
+				String nome = "UpaTransporter" +category ;
 				trans = new TransporterClient(urls.get(i),nome);
 				trans.clearJobs();
 			} catch(Exception e) {

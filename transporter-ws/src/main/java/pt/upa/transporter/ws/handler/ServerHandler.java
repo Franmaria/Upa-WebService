@@ -57,6 +57,10 @@ public class ServerHandler implements SOAPHandler<SOAPMessageContext> {
 	public static final String RESPONSE_HEADER_DIGSIG = "digitalSignature";
 	public static final String RESPONSE_NS_DIGSIG = REQUEST_NS_DIGSIG;
 	
+	public static final String HEADER_NONCE_SIG = "NonceSig";
+	public static final String REQUEST_NS_NONCESIG = "urn:nonceSig";
+	public static final String RESPONSE_NS_NONCESIG = REQUEST_NS_NONCESIG;
+	
 	public static String FOREIGN_ORG_PROPERTY = "UpaBroker";
 	public static final String HEADER_ORG = "org";
 	public static final String REQUEST_NS_ORG = "urn:org";
@@ -120,10 +124,13 @@ public class ServerHandler implements SOAPHandler<SOAPMessageContext> {
 	            //DIGSIG
 				Name name = se.createName(RESPONSE_HEADER_DIGSIG, "digS", RESPONSE_NS_DIGSIG);
 				SOAPHeaderElement element = sh.addHeaderElement(name);
-
+				
+				Name name4 = se.createName(HEADER_NONCE_SIG, "nonceS", RESPONSE_NS_NONCESIG);
+				SOAPHeaderElement element4 = sh.addHeaderElement(name4);
 
 				// add header element value
 				String newValue=null;
+				String nonceSigValue=null;
 				try {
 					String KEYSTORE_FILE = "../keys_2016_05_06__20_39_05/" + PROPERTY_ORGANIZATION + "/"+PROPERTY_ORGANIZATION+".jks";
 					String KEYSTORE_PASSWORD = "ins3cur3";
@@ -132,15 +139,18 @@ public class ServerHandler implements SOAPHandler<SOAPMessageContext> {
 					
 					privateKey= getPrivateKeyFromKeystore(KEYSTORE_FILE, KEYSTORE_PASSWORD.toCharArray(), KEY_ALIAS, KEY_PASSWORD.toCharArray());
 					newValue = printBase64Binary(makeDigitalSignature(parseBase64Binary(bodyValue), privateKey)); 
+					nonceSigValue = printBase64Binary(makeDigitalSignature(array, privateKey));
+
 				} catch (Exception e) {
 					System.out.printf("erro ao ler keystore ou ler certificado");
 					e.printStackTrace();
 					throw new RuntimeException("erro ao ler certificado ou utilizar private key de keystore ao criar digSig ");
 				}
 				element.addTextNode(newValue);
+				element4.addTextNode(nonceSigValue);
 
-				System.out.printf(" digSig:%n '%s' %n", element.getValue());
-				System.out.println();
+
+				System.out.println("outbound over");
 				
 			} catch (SOAPException e) {
 				System.out.printf("Failed to add SOAP header because of %s%n", e);
@@ -164,21 +174,6 @@ public class ServerHandler implements SOAPHandler<SOAPMessageContext> {
 					System.out.println("Header not found.");
 					throw new RuntimeException("soap header n foi encontrado");
 				}
-				/*
-				Name name4 = se.createName(HEADER_ORG, "org", RESPONSE_NS_ORG);
-				Iterator<?> it4 = sh.getChildElements(name4);
-				
-				String foreignOrg =null;
-				SOAPElement orgElement=null;
-				if (it4.hasNext()) {
-					orgElement = (SOAPElement) it4.next();
-					foreignOrg = orgElement.getValue();
-				System.out.printf("%s %s%n","debug foreignOrg:", foreignOrg);
-				} else {
-					System.out.printf("Header element %s not found%n", HEADER_ORG);
-					throw new RuntimeException("foreign org header n foi encontrado");
-				}
-				*/
 				
 				Name name3 = se.createName(REQUEST_HEADER_NONCE, "nonce", REQUEST_NS_NONCE);
 				Iterator<?> it3 = sh.getChildElements(name3);
@@ -190,7 +185,6 @@ public class ServerHandler implements SOAPHandler<SOAPMessageContext> {
 				nonceElement = (SOAPElement) it3.next();
 				// get header element value
 				nonceValue = nonceElement.getValue();
-				System.out.printf("%s %s%n","debug nonce", nonceValue);
 				} else {
 					System.out.printf("Header element %s not found invalid signature.%n", REQUEST_HEADER_NONCE);
 					throw new RuntimeException("nonce header n foi encontrado");
@@ -218,11 +212,25 @@ public class ServerHandler implements SOAPHandler<SOAPMessageContext> {
 
 				// get header element value
 				digSigValue = digSigElement.getValue();
-				System.out.printf("%s %s should print header digSig'%s'%n", CLASS_NAME,"debug digSig", digSigValue);
+				System.out.printf("%s %s should print header digSig%n", CLASS_NAME,"debug digSig");
 				} else {
 					System.out.printf("Header element %s not found invalid signature.%n", REQUEST_HEADER_DIGSIG);
 					throw new RuntimeException("digSig header n encontrado");
 				}
+				
+				Name name4 = se.createName(HEADER_NONCE_SIG, "nonceS", RESPONSE_NS_NONCESIG);
+				Iterator<?> it4 = sh.getChildElements(name4);
+				String nonceSig = null; 
+				SOAPElement nonceSigElement=null;
+				if (it4.hasNext()) {
+				nonceSigElement = (SOAPElement) it4.next();
+				// get header element value
+				nonceSig = nonceSigElement.getValue();
+				} else {
+					System.out.printf("Header element %s not found must contain nounce value%n", HEADER_NONCE_SIG);
+					throw new RuntimeException("nonce value header not found");
+				}
+				
 				cert=TransporterMain.certMap.get("UpaBroker"); // static map
 				if (cert == null) {
 					System.out.printf("requested organization not found %n");
@@ -232,7 +240,6 @@ public class ServerHandler implements SOAPHandler<SOAPMessageContext> {
 				publicKey = getPublicKeyFromCertificate(cert);
 				boolean digSigVerify = false;
 				byte[] cipheredSig = parseBase64Binary(digSigValue); //temporary value
-				System.out.printf("%n ciphered signature: %s%n%n",printHexBinary(cipheredSig));
 
 				byte[] result = parseBase64Binary(bodyValue);
 				//System.out.printf("text bytes: %s%n",printHexBinary(result));
@@ -248,7 +255,27 @@ public class ServerHandler implements SOAPHandler<SOAPMessageContext> {
 					System.out.printf("%n %n wrong digital signature after verification %n %n");
 					throw new RuntimeException("confirmada assinatura errada depois de verificar");
 				}
-				System.out.println("digSig verified!%n"); //TODO fix same prob in client handler incoming
+				System.out.println("digSig verified!%n");
+				
+				digSigVerify = false;
+				cipheredSig = parseBase64Binary(nonceSig); //temporary value
+				System.out.printf("%n ciphered signature: %s%n%n",printHexBinary(cipheredSig));
+
+				result = parseBase64Binary(nonceValue);
+				//System.out.printf("text bytes: %s%n",printHexBinary(result));
+
+				try {
+					// compares ciphered digested message with soap body message
+					digSigVerify = verifyDigitalSignature(cipheredSig, result, publicKey);
+				} catch (Exception e) {
+					e.printStackTrace();
+					throw new RuntimeException("erro ao verificar assinatura");
+				}
+				if (!digSigVerify) {
+					System.out.printf("%n %n wrong digital signature after verification nonce %n %n");
+					throw new RuntimeException("confirmada assinatura errada depois de verificar nonce");
+				}
+				System.out.println("digSig verified nonce !%n");
 
 			} catch (SOAPException e) {
 				System.out.printf("Failed to get SOAP header because of %s%n", e);

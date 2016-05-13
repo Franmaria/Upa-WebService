@@ -1,8 +1,8 @@
 <handler-chains xmlns="http://java.sun.com/xml/ns/javaee">
 	<handler-chain>
-		<handler>
+		<!--  <handler>
             <handler-class>pt.upa.transporter.ws.handler.CertCheckHandlerClient</handler-class>
-        </handler>
+        </handler> -->
 		<handler>
 			<handler-class>pt.upa.transporter.ws.handler.ClientHandler</handler-class>
 		</handler>

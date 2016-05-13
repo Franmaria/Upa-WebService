@@ -58,6 +58,10 @@ public class ServerHandler implements SOAPHandler<SOAPMessageContext> {
 	public static final String RESPONSE_HEADER_DIGSIG = "digitalSignature";
 	public static final String RESPONSE_NS_DIGSIG = REQUEST_NS_DIGSIG;
 	
+	public static final String HEADER_NONCE_SIG = "NonceSig";
+	public static final String REQUEST_NS_NONCESIG = "urn:nonceSig";
+	public static final String RESPONSE_NS_NONCESIG = REQUEST_NS_NONCESIG;
+	
 	public static String FOREIGN_ORG_PROPERTY = "";
 	public static final String HEADER_ORG = "org";
 	public static final String REQUEST_NS_ORG = "urn:org";
@@ -116,6 +120,8 @@ public class ServerHandler implements SOAPHandler<SOAPMessageContext> {
 	            element2.addTextNode(printBase64Binary(array));
 	            System.out.printf("%n element2Value: %s%n",element2.getValue());
 	            
+	            Name name3 = se.createName(HEADER_NONCE_SIG, "nonceS", RESPONSE_NS_NONCESIG);
+				SOAPHeaderElement element3 = sh.addHeaderElement(name3);
 	            //DIGSIG
 				Name name = se.createName(RESPONSE_HEADER_DIGSIG, "digS", RESPONSE_NS_DIGSIG);
 				SOAPHeaderElement element = sh.addHeaderElement(name);
@@ -123,6 +129,7 @@ public class ServerHandler implements SOAPHandler<SOAPMessageContext> {
 
 				// add header element value
 				String newValue=null;
+				String NonceSig=null;
 				try {
 					String KEYSTORE_FILE = "../keys_2016_05_06__20_39_05/" + PROPERTY_ORGANIZATION + "/"+PROPERTY_ORGANIZATION+".jks";
 					String KEYSTORE_PASSWORD = "ins3cur3";
@@ -130,15 +137,16 @@ public class ServerHandler implements SOAPHandler<SOAPMessageContext> {
 					String KEY_PASSWORD = "1nsecure";
 					
 					privateKey= getPrivateKeyFromKeystore(KEYSTORE_FILE, KEYSTORE_PASSWORD.toCharArray(), KEY_ALIAS, KEY_PASSWORD.toCharArray());
+					
 					newValue = printBase64Binary(makeDigitalSignature(parseBase64Binary(bodyValue), privateKey)); 
+					NonceSig = printBase64Binary(makeDigitalSignature(array, privateKey));
 				} catch (Exception e) {
 					System.out.printf("n consegue ler certificado");
 					e.printStackTrace();
 					throw new RuntimeException("n consegue ler certificado");
 				}
 				element.addTextNode(newValue);
-
-				System.out.printf(" digSig:%n '%s' %n", element.getValue());
+				element3.addTextNode(NonceSig);
 				System.out.println();
 				
 			} catch (SOAPException e) {
@@ -211,6 +219,20 @@ public class ServerHandler implements SOAPHandler<SOAPMessageContext> {
 				Name name = se.createName(REQUEST_HEADER_DIGSIG, "digS", REQUEST_NS_DIGSIG);
 				Iterator<?> it = sh.getChildElements(name);
 				
+				Name name5 = se.createName(HEADER_NONCE_SIG, "nonceS", RESPONSE_NS_NONCESIG);
+				Iterator<?> it5 = sh.getChildElements(name5);
+				String nonceSig = null; 
+				SOAPElement nonceSigElement=null;
+				if (it5.hasNext()) {
+				nonceSigElement = (SOAPElement) it5.next();
+				// get header element value
+				nonceSig = nonceSigElement.getValue();
+				System.out.printf("prints nonce: '%s'%n", nonceSig);
+				} else {
+					System.out.printf("Header element %s not found must contain nounce value%n", HEADER_NONCE_SIG);
+					throw new RuntimeException("nonce value header not found");
+				}
+				
 				// check for certified
 				if (it.hasNext()) {
 				SOAPElement digSigElement = (SOAPElement) it.next();
@@ -246,11 +268,28 @@ public class ServerHandler implements SOAPHandler<SOAPMessageContext> {
 					System.out.printf("%n %n wrong digital signature after verification %n %n");
 					throw new RuntimeException("wrong digital signature after verification");
 				}
+				
+				digSigVerify = false;
+				cipheredSig = parseBase64Binary(nonceSig);
+
+				result = parseBase64Binary(nonceValue);
+
+				try {
+					digSigVerify = verifyDigitalSignature(cipheredSig, result, publicKey);
+				} catch (Exception e) {
+					e.printStackTrace();
+					throw new RuntimeException("error verifying digital signature nonce");
+				}
+				if (!digSigVerify) {
+					System.out.printf("%n %n wrong digital signature after verification nonce %n %n");
+					throw new RuntimeException("wrong digital signature after verification nonce");
+				}
+				
 				System.out.println("digSig verified!%n"); //TODO fix same prob in client handler incoming
 
 			} catch (SOAPException e) {
-				System.out.printf("Failed to get SOAP header because of %s%n", e);
-				throw new RuntimeException("failed to get soap header");
+				System.out.printf("Failed to get SOAP header because of nonce %s%n", e);
+				throw new RuntimeException("failed to get soap header nonce");
 			}
 			System.out.println("finished handling ServerHandler incoming message");
 

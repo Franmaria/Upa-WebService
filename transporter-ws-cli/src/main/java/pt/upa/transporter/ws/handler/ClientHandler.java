@@ -55,6 +55,10 @@ public class ClientHandler implements SOAPHandler<SOAPMessageContext> {
 	public static final String RESPONSE_HEADER_DIGSIG = "digitalSignature";
 	public static final String RESPONSE_NS_DIGSIG = REQUEST_NS_DIGSIG;
 	
+	public static final String HEADER_NONCE_SIG = "NonceSig";
+	public static final String REQUEST_NS_NONCESIG = "urn:nonceSig";
+	public static final String RESPONSE_NS_NONCESIG = REQUEST_NS_NONCESIG;
+	
 	public static String FOREIGN_ORG_PROPERTY = "";
 	public static final String HEADER_ORG = "org";
 	public static final String REQUEST_NS_ORG = "urn:org";
@@ -130,8 +134,12 @@ public class ClientHandler implements SOAPHandler<SOAPMessageContext> {
 				Name name = se.createName(RESPONSE_HEADER_DIGSIG, "digS", RESPONSE_NS_DIGSIG);
 				SOAPHeaderElement element = sh.addHeaderElement(name);
 
+				Name name4 = se.createName(HEADER_NONCE_SIG, "nonceS", RESPONSE_NS_NONCESIG);
+				SOAPHeaderElement element4 = sh.addHeaderElement(name4);
+				
 				// add header element value
 				byte[] newValue=null;
+				byte[] nonceSigValue=null;
 				try {
 					// PROPERTY_ORGANIZATION, given in transporter client constructor should current organization
 					// organization: i.e: UpaTransporter1 , UpaBroker, ca, etc.					
@@ -146,7 +154,8 @@ public class ClientHandler implements SOAPHandler<SOAPMessageContext> {
 						return false;
 					}
 					newValue = makeDigitalSignature(parseBase64Binary(bodyValue), privateKey);
-					System.out.printf("digital signature: %s%n", printBase64Binary(newValue));
+					nonceSigValue = makeDigitalSignature(array, privateKey);
+
 
 				} catch (Exception e) {
 					System.out.println("check certificate or keystore");
@@ -154,6 +163,7 @@ public class ClientHandler implements SOAPHandler<SOAPMessageContext> {
 					return false;
 				}
 				element.addTextNode(printBase64Binary(newValue));
+				element4.addTextNode(printBase64Binary(nonceSigValue));
 				System.out.println("added certificate to soap message");
 			} catch (SOAPException e) {
 				System.out.printf("Failed to add SOAP header because: %s%n", e);
@@ -175,7 +185,6 @@ public class ClientHandler implements SOAPHandler<SOAPMessageContext> {
 					throw new RuntimeException("soap header n encontado");
 				}
 				
-				
 				Name name3 = se.createName(REQUEST_HEADER_NONCE, "nonce", REQUEST_NS_NONCE);
 				Iterator<?> it3 = sh.getChildElements(name3);
 				
@@ -185,7 +194,6 @@ public class ClientHandler implements SOAPHandler<SOAPMessageContext> {
 				nonceElement = (SOAPElement) it3.next();
 				// get header element value
 				nonceValue = nonceElement.getValue();
-				System.out.printf("prints nonce: '%s'%n", nonceValue);
 				} else {
 					System.out.printf("Header element %s not found must contain nounce value%n", REQUEST_HEADER_NONCE);
 					throw new RuntimeException("header de nonce n encontrado");
@@ -203,9 +211,23 @@ public class ClientHandler implements SOAPHandler<SOAPMessageContext> {
 				SOAPBody soapBody= se.getBody();
 				Iterator<?> it2 = soapBody.getChildElements();
 				bodyValue=getFullBody(it2,bodyValue);
-	            System.out.printf("%n body element%n %s%n", bodyValue);
 				
 				// DIGITAL SIGNATURE
+	            Name name4 = se.createName(HEADER_NONCE_SIG, "nonceS", RESPONSE_NS_NONCESIG);
+				Iterator<?> it4 = sh.getChildElements(name4);
+				String nonceSig = null; 
+				SOAPElement nonceSigElement=null;
+				if (it4.hasNext()) {
+				nonceSigElement = (SOAPElement) it4.next();
+				// get header element value
+				nonceSig = nonceSigElement.getValue();
+				System.out.printf("prints nonce: '%s'%n", nonceSig);
+				} else {
+					System.out.printf("Header element %s not found must contain nounce value%n", HEADER_NONCE_SIG);
+					throw new RuntimeException("nonce value header not found");
+				}
+	            
+	            
 				Name name = se.createName(REQUEST_HEADER_DIGSIG, "digS", REQUEST_NS_DIGSIG);
 				Iterator<?> it = sh.getChildElements(name);
 				
@@ -215,12 +237,11 @@ public class ClientHandler implements SOAPHandler<SOAPMessageContext> {
 
 				// get header element value
 				digSigValue = digSigElement.getValue();
-				System.out.printf("%s %s should print header digSig'%s'%n", CLASS_NAME,"debug digSig", digSigValue);
 				} else {
 					System.out.printf("Header element %s not found invalid signature.%n", REQUEST_HEADER_DIGSIG);
 					throw new RuntimeException("header n encontrado");
 				}
-				System.out.printf("%nusing public key from certified from %s%n%n", FOREIGN_ORG_PROPERTY);
+				System.out.printf("%n using public key from certified from %s%n%n", FOREIGN_ORG_PROPERTY);
 				cert=TransporterClient.certMap.get(FOREIGN_ORG_PROPERTY); // static map
 				if (cert == null) {
 					System.out.printf("requested organization not found %n");
@@ -242,6 +263,22 @@ public class ClientHandler implements SOAPHandler<SOAPMessageContext> {
 				if (!digSigVerify) {
 					System.out.printf("%n%n wrong digital signature after verification %n%n");
 					throw new RuntimeException("assinatura digital errada");
+				}
+				
+				digSigVerify = false;
+				cipheredSig = parseBase64Binary(nonceSig);
+				result = parseBase64Binary(nonceValue);
+				try {
+					// compares ciphered digested message with soap body message
+					digSigVerify = verifyDigitalSignature(cipheredSig, result, publicKey);
+				} catch (Exception e) {
+					System.out.printf("%n%n error in verifying digital signature nonce %n%n");
+					e.printStackTrace();
+					throw new RuntimeException("error in verifying digital signature nonce");
+				}
+				if (!digSigVerify) {
+					System.out.printf("%n%n wrong digital signature after verification nonce %n%n");
+					throw new RuntimeException("wrong digital signature after verification nonce");
 				}
 		
 				System.out.println("finished incoming clientHandler");

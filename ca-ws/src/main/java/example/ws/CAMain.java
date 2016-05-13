@@ -35,7 +35,7 @@ public class CAMain {
 				}
 			} catch(FileNotFoundException e1) {
 				// exception to check when the last transporter certificate was read
-				System.out.println("transporters certificates read");
+				
 				// does nothing, continues execution
 			}
 			serverName="UpaBroker";

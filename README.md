@@ -1,7 +1,7 @@
 # Projeto de Sistemas Distribuídos 2015-2016 #
 
 Grupo de SD 60 - Campus Taguspark
-*(preencher com número do grupo de SD no Fénix e depois apagar esta linha)*
+
 
 Daniel Reis 81981 ddreis88@gmail.com
 
@@ -44,7 +44,7 @@ cd t60
 [3] Obter código fonte do projeto (versão entregue)
 
 ```
-git clone -b SD_R1 https://github.com/tecnico-softeng-distsys-2015/T_60-project.git 
+git clone -b SD_R2 https://github.com/tecnico-softeng-distsys-2015/T_60-project.git 
 
 ```
 
@@ -53,7 +53,22 @@ git clone -b SD_R1 https://github.com/tecnico-softeng-distsys-2015/T_60-project.
 ```
 cd uddi-naming
 mvn clean install
+
+cd ws-handlers
+mvn clean install
 ```
+
+### Serviço CA
+
+[1] Construir e executar **servidor**
+	cd ca-ws
+	mvn clean install
+	mvn exec:java
+
+	cd ca-ws-cli
+	mvn clean
+	mvn generate-sources install
+
 
 -------------------------------------------------------------------------------
 
@@ -89,11 +104,14 @@ mvn clean install
 ```
 cd broker-ws
 mvn clean install
-mvn exec:java
+mvn -Dws.type=0 exec:java
 ```
+[2] Construir e executar  **replica** 
+	cd broker-ws
+	mvn clean install
+	mvn -Dws.type=1 exec:java
 
-
-[2] Construir **cliente** e executar testes
+[3] Construir **cliente** e executar testes
 
 ```
 cd broker-ws-cli

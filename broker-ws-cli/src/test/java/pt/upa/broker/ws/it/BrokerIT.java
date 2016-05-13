@@ -338,15 +338,7 @@ public class BrokerIT {
     		fail("jobs diferentes dos do main");
     	}
 		
-    	TransportView state2 = null;
-    	
-    	try {
-    		state2 = bp.viewTransport(job1);  
-		} catch (UnknownTransportFault_Exception e) {
-			fail("caught exception");
-		}
-    	
-    	if(!state.getState().equals(state2.getState())) {
+    	if(!state.getState().equals(list.get(0).getState())) {
     		fail("o estado nao mudou na replica");// teste para ver se quando o estado muda no principal na replica tambem muda 
     	} 
     	

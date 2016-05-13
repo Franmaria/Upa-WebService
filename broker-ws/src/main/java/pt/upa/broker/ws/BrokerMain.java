@@ -19,29 +19,34 @@ public class BrokerMain {
 		String name = args[1];
 		String url = args[2];
 		int type = Integer.parseInt(args[3]); // se o type for 0 o servidor é o principal se for 1 é uma replica
-
+		String replicaUrl = "http://localhost:8091/broker-ws/endpoint";
+		
 		Endpoint endpoint = null;
 		UDDINaming uddiNaming = null;
+		boolean isReplica; 
 		try {
-			if (type == 1) {
-				name = "UpaBrokerReplica";
+			
+			if(type == 1){
+				isReplica = true;
+			} else {
+				isReplica = false;
 			}
-
-			BrokerPort port = new BrokerPort(uddiURL);
+			BrokerPort port = new BrokerPort(uddiURL, replicaUrl, isReplica);
 			endpoint = Endpoint.create(port);
 			
 			// publish endpoint
 			System.out.printf("Starting %s%n", url);
 			endpoint.publish(url);
 
-			// publish to UDDI
-			System.out.printf("Publishing '%s' to UDDI at %s%n", name, uddiURL);
-			uddiNaming = new UDDINaming(uddiURL);
-			uddiNaming.rebind(name, url);
-
 			if (type == 1){
 				port.checkMainServer();
+			}else {
+				// publish to UDDI
+				System.out.printf("Publishing '%s' to UDDI at %s%n", name, uddiURL);
+				uddiNaming = new UDDINaming(uddiURL);
+				uddiNaming.rebind(name, url);
 			}
+			
 			// wait
 			System.out.println("Awaiting connections");
 			System.out.println("Press enter to shutdown");

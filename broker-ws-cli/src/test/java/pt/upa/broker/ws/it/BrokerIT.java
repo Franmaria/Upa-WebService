@@ -14,6 +14,8 @@ import pt.upa.broker.ws.cli.BrokerClient;
 
 import static org.junit.Assert.*;
 
+import java.util.List;
+
 import javax.xml.registry.JAXRException;
 
 /**
@@ -26,7 +28,6 @@ public class BrokerIT {
 
     // static members
 	private static String uddiURL = "http://localhost:9090";
-	private static UDDINaming uddiNaming;
 	private static String request1, request2, request3,request4,request5,request6;
 	private static BrokerClient bp;
 	private static TransportView t1,t2,t3,t4,t5;
@@ -36,7 +37,6 @@ public class BrokerIT {
 	
     @BeforeClass
     public static void oneTimeSetUp() {
-    	uddiNaming = null;
     	request1="";
     	request2="";
     	request3="";
@@ -44,22 +44,21 @@ public class BrokerIT {
     	request5="";
     	request6="";
     	
-    	try {
-			uddiNaming = new UDDINaming(uddiURL);
-		    } catch(JAXRException e){
-		      System.out.printf("Caught exception: %s%n", e);
-		      e.printStackTrace();
-		    }
+  
+		bp = new BrokerClient(uddiURL);
 		
-    	String urlBroker;
-		try {
-			urlBroker = uddiNaming.lookup("UpaBroker");
-			bp = new BrokerClient(urlBroker);
-		} catch (JAXRException e1) {			
-			e1.printStackTrace();
-		}
 
     	bp.clearTransports();
+    	
+    }
+    
+    @AfterClass
+    public static void oneTimeTearDown() {
+    	bp.clearTransports();
+    }
+
+    @Before
+    public void setUp() {
     	try {
 			request1 = bp.requestTransport("Lisboa", "Porto", 40); // centro norte menor
 			request2 = bp.requestTransport("Lisboa", "Coimbra", 10); // centro centro menor
@@ -78,16 +77,6 @@ public class BrokerIT {
 			fail("caught unknown location fault" + " " +request1 +" " +request2+" "+request4);
 			e.printStackTrace();
 		}
-    }
-    
-    @AfterClass
-    public static void oneTimeTearDown() {
-    	bp.clearTransports();
-    }
-
-    @Before
-    public void setUp() {
-    		
     	
     }
 
@@ -97,6 +86,8 @@ public class BrokerIT {
     	t2=null;
     	t3=null;
     	t4=null;
+    	
+    	bp.clearTransports();
     }
 
     
@@ -216,6 +207,7 @@ public class BrokerIT {
 			assertEquals("wrong exception", "Nao existe um transporter disponivel", e.getMessage());
 		}
     }
+    
     @Test
     public void test5() {
     	// verifica excecoes do broker Port request preco <0
@@ -297,5 +289,64 @@ public class BrokerIT {
 				| UnavailableTransportPriceFault_Exception | UnknownLocationFault_Exception e) {
 			assertEquals("wrong error caught","Não existe uma oferta com um preço menor", e.getMessage());
 		}
+    }
+    @Test
+    public void testReplicacao() {
+    	// verifica se a replicacao esta a funcionar bem 
+    	bp.clearTransports(); //no setup pedem-se duas viagens, ao fazer clear tanto a replica como o servidor principal tem de ter 0
+    	
+    	String job1 = null;
+    	String job2 = null; 
+    	try {
+    		job1 = bp.requestTransport("Lisboa","Coimbra" , 20);
+			job2 = bp.requestTransport("Lisboa", "Porto", 20);
+    	} catch (Exception e) {
+			fail("caught exception");
+		}
+    	
+    	try { // espera que os trabalhos mudem de estado nos trasporters 
+			 Thread.sleep(6500);
+		}catch (InterruptedException e) {
+			System.out.printf("Caught exception: %s%n", e);
+			e.printStackTrace();
+		}
+    	TransportView state = null;
+    	try {
+			state = bp.viewTransport(job1); //o estado do job1 vai mudar 
+		} catch (UnknownTransportFault_Exception e) {
+			fail("caught exception");
+		}
+    	
+    	
+    	bp.ping("kill"); // esta operacao mata o servidor principal
+    	
+    	List<TransportView> list = null; 
+    	try{	
+    		
+    		list = bp.listTransports();
+    	}catch(Exception e){
+    		fail("caught exception"); // se apanhar excepcao a troca para a replica nao foi bem feita
+    	}
+    	int size = list.size();
+  
+    	if (size != 2){
+			fail("update dos transporters ou do clean nao foi feito");
+		}
+    	
+    	if(!(list.get(0).getId().equals(job1) && list.get(1).getId().equals(job2))){
+    		fail("jobs diferentes dos do main");
+    	}
+		
+    	TransportView state2 = null;
+    	
+    	try {
+    		state2 = bp.viewTransport(job1);  
+		} catch (UnknownTransportFault_Exception e) {
+			fail("caught exception");
+		}
+    	
+    	if(!state.getState().equals(state2.getState())) {
+    		fail("o estado nao mudou na replica");// teste para ver se quando o estado muda no principal na replica tambem muda 
+    	}  	
     }
 }

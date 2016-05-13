@@ -1,4 +1,4 @@
-package pt.upa.broker;
+package pt.upa.broker.ws.cli;
 
 import static javax.xml.ws.BindingProvider.ENDPOINT_ADDRESS_PROPERTY;
 
@@ -24,7 +24,7 @@ public class BrokerClientApplication {
 
 		String uddiURL = args[0];
 		String name = args[1];
-
+		/*
 		System.out.printf("Contacting UDDI at %s%n", uddiURL);
 		UDDINaming uddiNaming = new UDDINaming(uddiURL);
 
@@ -46,26 +46,18 @@ public class BrokerClientApplication {
 		BindingProvider bindingProvider = (BindingProvider) port;
 		Map<String, Object> requestContext = bindingProvider.getRequestContext();
 		requestContext.put(ENDPOINT_ADDRESS_PROPERTY, endpointAddress);
+		*/
+		BrokerClient b = new BrokerClient(uddiURL);
+		System.out.println(b.ping("primeiro"));
 		
-		String url = uddiNaming.lookup("UpaBroker");
-		BrokerClient broker = new BrokerClient(url);
-		
-		List<TransportView> list = broker.listTransports();
-		if (list != null) {
-			for(TransportView t: list ){
-				System.out.println(t.getId());
+		try {
+				System.out.println("segundo");
+				Thread.sleep(5000);
+			} catch (InterruptedException e) {
+				System.out.printf("Caught exception: %s%n", e);
+			    e.printStackTrace();
 			}
-		}
 		
-		broker.requestTransport("Lisboa", "Coimbra", 20);
-		broker.requestTransport("Lisboa", "Coimbra", 30);
-		
-		list = broker.listTransports();
-		if (list != null) {
-			for(TransportView t: list ){
-				System.out.println(t.getId());
-			}
-		}
-		
+		System.out.println(b.ping("terceiro"));
 	}
 }

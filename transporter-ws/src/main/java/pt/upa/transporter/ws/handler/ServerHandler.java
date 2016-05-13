@@ -57,7 +57,7 @@ public class ServerHandler implements SOAPHandler<SOAPMessageContext> {
 	public static final String RESPONSE_HEADER_DIGSIG = "digitalSignature";
 	public static final String RESPONSE_NS_DIGSIG = REQUEST_NS_DIGSIG;
 	
-	public static String FOREIGN_ORG_PROPERTY = "";
+	public static String FOREIGN_ORG_PROPERTY = "UpaBroker";
 	public static final String HEADER_ORG = "org";
 	public static final String REQUEST_NS_ORG = "urn:org";
 	public static final String RESPONSE_NS_ORG = REQUEST_NS_ORG;
@@ -77,6 +77,8 @@ public class ServerHandler implements SOAPHandler<SOAPMessageContext> {
 		System.out.printf("organizacao: %s %n", PROPERTY_ORGANIZATION);
 
 		if (outbound) {
+			System.out.printf("outbound %n");
+
 			// outbound message
 			try {
 				// get SOAP envelope
@@ -94,10 +96,6 @@ public class ServerHandler implements SOAPHandler<SOAPMessageContext> {
 				Iterator<?> it2 = soapBody.getChildElements();
 				bodyValue=getFullBody(it2,bodyValue);
 	            System.out.printf("%n outgoing message body element%n %s%n", bodyValue);
-	            
-	            Name name3=se.createName(HEADER_ORG,"org",RESPONSE_NS_ORG);
-	            SOAPHeaderElement element3 = sh.addHeaderElement(name3);
-	            element3.addTextNode(PROPERTY_ORGANIZATION);
 	            
 
 	            //nonces insertion into soap
@@ -148,9 +146,9 @@ public class ServerHandler implements SOAPHandler<SOAPMessageContext> {
 				System.out.printf("Failed to add SOAP header because of %s%n", e);
 				throw new RuntimeException("excecao SOAP falhou a adicionar header");
 			}
-
-			
 		} else {
+			System.out.printf("inbound %n");
+
 			// inbound message
 
 			// get token from request SOAP header
@@ -166,7 +164,7 @@ public class ServerHandler implements SOAPHandler<SOAPMessageContext> {
 					System.out.println("Header not found.");
 					throw new RuntimeException("soap header n foi encontrado");
 				}
-
+				/*
 				Name name4 = se.createName(HEADER_ORG, "org", RESPONSE_NS_ORG);
 				Iterator<?> it4 = sh.getChildElements(name4);
 				
@@ -180,7 +178,7 @@ public class ServerHandler implements SOAPHandler<SOAPMessageContext> {
 					System.out.printf("Header element %s not found%n", HEADER_ORG);
 					throw new RuntimeException("foreign org header n foi encontrado");
 				}
-				FOREIGN_ORG_PROPERTY=foreignOrg;
+				*/
 				
 				Name name3 = se.createName(REQUEST_HEADER_NONCE, "nonce", REQUEST_NS_NONCE);
 				Iterator<?> it3 = sh.getChildElements(name3);
@@ -225,7 +223,7 @@ public class ServerHandler implements SOAPHandler<SOAPMessageContext> {
 					System.out.printf("Header element %s not found invalid signature.%n", REQUEST_HEADER_DIGSIG);
 					throw new RuntimeException("digSig header n encontrado");
 				}
-				cert=TransporterMain.certMap.get(FOREIGN_ORG_PROPERTY); // static map
+				cert=TransporterMain.certMap.get("UpaBroker"); // static map
 				if (cert == null) {
 					System.out.printf("requested organization not found %n");
 					throw new RuntimeException("certificado da organizacao n encontrado no mapa de certificados do transporter main");

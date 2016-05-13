@@ -74,7 +74,7 @@ public class ClientHandler implements SOAPHandler<SOAPMessageContext> {
 		System.out.printf("organizacao: %s %n", PROPERTY_ORGANIZATION);
 
 		if (outbound) {
-			
+			System.out.printf("outbound %n");
 			// put token in response SOAP header
 			try {
 				// get SOAP envelope
@@ -160,6 +160,7 @@ public class ClientHandler implements SOAPHandler<SOAPMessageContext> {
 			}
 			
 		} else {
+			System.out.printf("inbound %n");
 			// inbound message
 			try {
 				// get SOAP envelope header
@@ -174,20 +175,6 @@ public class ClientHandler implements SOAPHandler<SOAPMessageContext> {
 					throw new RuntimeException("soap header n encontado");
 				}
 				
-				Name name4 = se.createName(HEADER_ORG, "org", RESPONSE_NS_ORG);
-				Iterator<?> it4 = sh.getChildElements(name4);
-				
-				String foreignOrg =null;
-				SOAPElement orgElement=null;
-				if (it4.hasNext()) {
-					orgElement = (SOAPElement) it4.next();
-					foreignOrg = orgElement.getValue();
-				System.out.printf("%s %s%n","debug foreignOrg:", foreignOrg);
-				} else {
-					System.out.printf("Header element %s not found%n", HEADER_ORG);
-					throw new RuntimeException("foreign org header n foi encontrado");
-				}
-				FOREIGN_ORG_PROPERTY=foreignOrg;
 				
 				Name name3 = se.createName(REQUEST_HEADER_NONCE, "nonce", REQUEST_NS_NONCE);
 				Iterator<?> it3 = sh.getChildElements(name3);
@@ -218,8 +205,6 @@ public class ClientHandler implements SOAPHandler<SOAPMessageContext> {
 				bodyValue=getFullBody(it2,bodyValue);
 	            System.out.printf("%n body element%n %s%n", bodyValue);
 				
-				
-				
 				// DIGITAL SIGNATURE
 				Name name = se.createName(REQUEST_HEADER_DIGSIG, "digS", REQUEST_NS_DIGSIG);
 				Iterator<?> it = sh.getChildElements(name);
@@ -235,7 +220,8 @@ public class ClientHandler implements SOAPHandler<SOAPMessageContext> {
 					System.out.printf("Header element %s not found invalid signature.%n", REQUEST_HEADER_DIGSIG);
 					throw new RuntimeException("header n encontrado");
 				}
-				cert=TransporterClient.certMap.get(PROPERTY_ORGANIZATION); // static map
+				System.out.printf("%nusing public key from certified from %s%n%n", FOREIGN_ORG_PROPERTY);
+				cert=TransporterClient.certMap.get(FOREIGN_ORG_PROPERTY); // static map
 				if (cert == null) {
 					System.out.printf("requested organization not found %n");
 					throw new RuntimeException("certificado nao encontrado no mapa");
@@ -256,7 +242,6 @@ public class ClientHandler implements SOAPHandler<SOAPMessageContext> {
 				if (!digSigVerify) {
 					System.out.printf("%n%n wrong digital signature after verification %n%n");
 					throw new RuntimeException("assinatura digital errada");
-					
 				}
 		
 				System.out.println("finished incoming clientHandler");

@@ -164,6 +164,8 @@ public class ClientHandler implements SOAPHandler<SOAPMessageContext> {
 
 			
 		} else {
+			System.out.printf("inbound %n");
+
 			// inbound message
 			try {
 				// get SOAP envelope header

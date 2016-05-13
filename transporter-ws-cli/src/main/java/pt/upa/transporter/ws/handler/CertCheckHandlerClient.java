@@ -40,8 +40,12 @@ public class CertCheckHandlerClient implements SOAPHandler<SOAPMessageContext> {
 		System.out.printf("%n current org '%s'%n", ClientHandler.PROPERTY_ORGANIZATION);
 
 		if (!outbound) {
+			System.out.printf("inbound %n");
+
 			// in client it should only do something in outbound message
 		} else { 
+			System.out.printf("outbound %n");
+
 			// OUTBOUND
 			if (TransporterClient.certMap.get(ClientHandler.FOREIGN_ORG_PROPERTY)!=null) {
 				// certificado já existe
@@ -68,10 +72,11 @@ public class CertCheckHandlerClient implements SOAPHandler<SOAPMessageContext> {
 			
 			if(result==null) {
 				System.out.println("certificate not found");
+				throw new RuntimeException("certificate not found exception");
+
 			} else {
 				System.out.println("got certificate");
 			}
-//TODO des-encrypt certificate with verifyCertificate method in X509 certificateCheck example ?? check if needed
 			CertificateFactory certFactory;
 			Certificate cert;
 			try {
@@ -89,6 +94,8 @@ public class CertCheckHandlerClient implements SOAPHandler<SOAPMessageContext> {
 				System.out.println("no certified for organization with given name exists");
 				throw new RuntimeException("certificado n existe");
 			}
+			System.out.printf("%n foreign org: '%s'%n", ClientHandler.FOREIGN_ORG_PROPERTY);
+
 			TransporterClient.certMap.put(ClientHandler.FOREIGN_ORG_PROPERTY, cert);
 		}
 		return true;

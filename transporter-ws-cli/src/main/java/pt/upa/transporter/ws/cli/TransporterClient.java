@@ -25,10 +25,24 @@ public class TransporterClient {
 	public TransporterClient(String url, String serverName) {
 		//serverName e' o nome a quem o cliente se quer conectar
 		Certificate cert;
-		String certificateFilePath = "../keys_2016_05_06__20_39_05/"+serverName + "/"+ serverName + ".cer";
+		String certificateFilePath;
 		try {
+			certificateFilePath = "../keys_2016_05_06__20_39_05/"+"UpaBroker" + "/"+ "UpaBroker"  + ".cer";
 			cert = readCertificateFile(certificateFilePath);
+			if(cert==null) {
+				System.out.println("certificate null return value check");
+				throw new Exception("null certificate in transporter client");
+			}
 			certMap.put("UpaBroker", cert);
+			
+			certificateFilePath = "../keys_2016_05_06__20_39_05/"+"ca" + "/"+ "ca" + ".cer";
+			cert = readCertificateFile(certificateFilePath);
+			if(cert==null) {
+				System.out.println("certificate null return value check");
+				throw new Exception("null certificate in transporter client");
+			}
+			certMap.put("ca", cert);
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

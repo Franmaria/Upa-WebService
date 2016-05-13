@@ -13,6 +13,7 @@ import java.util.TimerTask;
 import javax.jws.WebService;
 import javax.xml.registry.JAXRException;
 import javax.xml.ws.BindingProvider;
+import javax.xml.ws.WebServiceException;
 
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
 import pt.upa.transporter.ws.BadJobFault_Exception;
@@ -33,15 +34,19 @@ import pt.upa.transporter.ws.handler.ClientHandler;
 
 public class BrokerPort implements BrokerPortType {
 
-  private BrokerPortType brokerReplica;
+  private BrokerPortType brokerPort;
   private UDDINaming uddiNaming;
+  private boolean replica; // se tiver a verdade o objecto e uma replica se tiver a falso e o main 
+  private String replicaUrl;
   private List<TransportView> contratos = new ArrayList<TransportView>();
   private List<String> cidades = new ArrayList<String>(Arrays.asList("Porto","Braga","Viana do Castelo","Vila Real","Bragança",
                                                               "Lisboa","Leiria","Santarém","Castelo Branco","Coimbra","Aveiro","Viseu","Guarda",
                                                               "Setúbal","Évora","Portalegre","Beja","Faro"));
   
-  public BrokerPort(String uddiURL) {
+  public BrokerPort(String uddiURL, String urlReplica, boolean isReplica) {
     /*Broker port cria uma instancia do UDDINaming e atribui a variavel global uddiNaming*/
+	replicaUrl = urlReplica;
+	replica = isReplica; 
 	try {
     	uddiNaming = new UDDINaming(uddiURL);
     } catch(JAXRException e){
@@ -53,7 +58,12 @@ public class BrokerPort implements BrokerPortType {
 
   public String ping(String name) {
 	/*ping retorna o prorio argumento, serve para testar a ligacao*/
-	 return name; 
+	if(name.equals("kill")){ //usado para matar o servidor nos testes de IT
+		System.exit(0);
+		return ""; 
+	} else{
+	  return name;
+	}
   }
 
 
@@ -65,33 +75,39 @@ public class BrokerPort implements BrokerPortType {
     TransporterClient trans;
     
     /*-------------------------teste para verificar se a localizacao e o price sao validos--------------------------*/
-    for(x = 0; x < cidades.size(); x++) {
-        if(origin.equals(cidades.get(x))) {
-            orig = true;
-        }
-
-        if(destination.equals(cidades.get(x))) {
-            dest = true;
-        }
-
-        if( dest && orig) {
-          break;
-        }
-    }
-
-    if( !dest || !orig) {
-      UnknownLocationFault f = new UnknownLocationFault();
-      if(!dest && !orig) {
-        f.setLocation(origin + " " + destination);
-      } else if (!dest) {
-        f.setLocation(destination);
-      } else {
-        f.setLocation(origin);
-      }
-
-      throw new UnknownLocationFault_Exception("Localização errada",f);
-    }
-
+	 
+    if(origin != null && destination != null){ 
+		for(x = 0; x < cidades.size(); x++) {
+	        if(origin.equals(cidades.get(x))) {
+	            orig = true;
+	        }
+	
+	        if(destination.equals(cidades.get(x))) {
+	            dest = true;
+	        }
+	
+	        if( dest && orig) {
+	          break;
+	        }
+	    }
+	
+	    if( !dest || !orig) {
+	      UnknownLocationFault f = new UnknownLocationFault();
+	      if(!dest && !orig) {
+	        f.setLocation(origin + " " + destination);
+	      } else if (!dest) {
+	        f.setLocation(destination);
+	      } else {
+	        f.setLocation(origin);
+	      }
+	      throw new UnknownLocationFault_Exception("Localização errada",f);
+	     }
+	 }else {
+		 UnknownLocationFault f = new UnknownLocationFault();
+		 f.setLocation("null");
+		 throw new UnknownLocationFault_Exception("Localização errada",f);
+	 }
+	 
     if(price < 0) {
       InvalidPriceFault i = new InvalidPriceFault();
       i.setPrice(price);
@@ -112,15 +128,18 @@ public class BrokerPort implements BrokerPortType {
 	
     List<String> urls;
 	try {
-		urls = new ArrayList<String>(uddiNaming.list("UpaTransporter%"));
-			
+		//urls = new ArrayList<String>(uddiNaming.list("UpaTransporter%"));
+		uddiNaming.list("UpaTransporter%");
+		urls = new ArrayList<String>();
+		urls.add(uddiNaming.lookup("UpaTransporter1"));
+		urls.add(uddiNaming.lookup("UpaTransporter2"));
 		for(x = 0;x < urls.size(); x++){
 			JobView s;
 				
 			try {
 				// TODO em vez de escrever diretamente para o handler criar variavel estatica em brokerApplication
 				// e em broker application enviar para handler
-				String nome = "UpaTransporter" + x;
+				String nome = "UpaTransporter" + (x+1);
 				trans = new TransporterClient(urls.get(x),nome);	
 				s = trans.requestJob(origin, destination, price);
 	   
@@ -176,7 +195,8 @@ public class BrokerPort implements BrokerPortType {
     	
     } else{
     	job.setState(TransportStateView.FAILED);
-    	mainUpdateTranspots(job);
+    	if(!replica)	
+    		mainUpdateTransports(job);
     	if(existeOferta) { // se existir pelo menos uma oferta quer dizer que nao foi encontrada nenhuma proposta com o price menor que o maximo 
     		UnavailableTransportPriceFault f = new UnavailableTransportPriceFault();
     		f.setBestPriceFound(job.getPrice());
@@ -188,8 +208,8 @@ public class BrokerPort implements BrokerPortType {
     		throw new UnavailableTransportFault_Exception("Nao existe um transporter disponivel",f);
     	}
     }
-    
-	mainUpdateTranspots(job);
+    if(!replica)
+		mainUpdateTransports(job);
     return job.getId();
     
   }
@@ -213,7 +233,8 @@ public class BrokerPort implements BrokerPortType {
 						}else {
 							y.setState(TransportStateView.fromValue(v));
 						}
-						mainUpdateTranspots(y);
+						if(!replica)
+							mainUpdateTransports(y);
 					}
 					return y;
 					
@@ -245,11 +266,15 @@ public class BrokerPort implements BrokerPortType {
 	TransporterClient trans; 
 	
 	try {
-		urls = new ArrayList<String>(uddiNaming.list("UpaTransporter%"));
-		
+		//urls = new ArrayList<String>(uddiNaming.list("UpaTransporter%"));
+		uddiNaming.list("UpaTransporter%");
+		urls = new ArrayList<String>();
+		urls.add(uddiNaming.lookup("UpaTransporter1"));
+		urls.add(uddiNaming.lookup("UpaTransporter2"));
+
 		for(int i=0; i<urls.size();i++) {
 			try {
-				String nome = "UpaTransporter" + i;
+				String nome = "UpaTransporter" + (i+1);
 				trans = new TransporterClient(urls.get(i),nome);
 				trans.clearJobs();
 			} catch(Exception e) {
@@ -258,7 +283,8 @@ public class BrokerPort implements BrokerPortType {
 				continue;
 			}
 		}
-		mainUpdateClearTransports(); //faz o clear no server replica
+		if(!replica)
+			mainUpdateClearTransports(); //faz o clear no server replica
 		
 	} catch (JAXRException e) {
 		System.out.printf("Caught exception: %s%n", e);
@@ -266,36 +292,30 @@ public class BrokerPort implements BrokerPortType {
 	}
   }
 
-  private void mainUpdateTranspots(TransportView job){
+  private void mainUpdateTransports(TransportView job){
 	  //Metodo usado pelo Servidor principal para fazer update da replica 
 	  if(job != null){	
 	  	connectReplica();
-	  	brokerReplica.updateTranspots(job);
+	  	brokerPort.updateTransports(job);
 	  }
   }
   
   private void mainUpdateClearTransports() {
 	  connectReplica();
-	  brokerReplica.updateClearTransports();
+	  brokerPort.updateClearTransports();
   }
   
   private void connectReplica(){  
-		if (brokerReplica == null) {
-			String brokerReplicaUrl = null;
-			try {
-				brokerReplicaUrl = uddiNaming.lookup("UpaBrokerReplica");
-			} catch (JAXRException e) {
-				System.out.println("error in lookup");
-			}
-			BrokerService service = new BrokerService(); 
-			brokerReplica = service.getBrokerPort();
-			BindingProvider bindingProvider = (BindingProvider) brokerReplica;
+		if (brokerPort == null) {
+			BrokerService ser = new BrokerService(); 
+			brokerPort = ser.getBrokerPort();
+			BindingProvider bindingProvider = (BindingProvider) brokerPort;
 			Map<String, Object> requestContext = bindingProvider.getRequestContext();
-			requestContext.put(ENDPOINT_ADDRESS_PROPERTY, brokerReplicaUrl);
+			requestContext.put(ENDPOINT_ADDRESS_PROPERTY, replicaUrl);
 		}
 	  }
 
-  /*------------------------Metodos usados pelo UpaBrokerReplica ---------------------------*/
+  /*-------------------------------------------------------Metodos usados pelo UpaBrokerReplica -----------------------------------------------------*/
   public class InnerClass extends TimerTask {
 		public void run() {
 			checkMainServer();
@@ -304,37 +324,56 @@ public class BrokerPort implements BrokerPortType {
 
   public void checkMainServer() {
 	  String brokerUrl = null;
+	 
+	  if(brokerPort == null) {
+		  try {
+			brokerUrl = uddiNaming.lookup("UpaBroker");
+			
+			BrokerService service = new BrokerService(); 
+			brokerPort = service.getBrokerPort();
+			BindingProvider bindingProvider = (BindingProvider) brokerPort;
+			Map<String, Object> requestContext = bindingProvider.getRequestContext();
+			requestContext.put(ENDPOINT_ADDRESS_PROPERTY, brokerUrl);
+			
+			int receiveTimeout = 1000;
+	        // The receive timeout property has alternative names
+	        // Again, set them all to avoid compability issues
+	        final List<String> RECV_TIME_PROPS = new ArrayList<String>();
+	        RECV_TIME_PROPS.add("com.sun.xml.ws.request.timeout");
+	        RECV_TIME_PROPS.add("com.sun.xml.internal.ws.request.timeout");
+	        RECV_TIME_PROPS.add("javax.xml.ws.client.receiveTimeout");
+	        // Set timeout until the response is received (unit is milliseconds; 0 means infinite)
+	        for (String propName : RECV_TIME_PROPS)
+	            requestContext.put(propName, receiveTimeout);
+		  } catch (JAXRException e) {
+			  replaceMainBroker();
+		  }	
+	  }
+       
 	  try {
-		brokerUrl = uddiNaming.lookup("UpaBroker");
-		
-		BrokerService service = new BrokerService(); 
-		BrokerPortType port = service.getBrokerPort();
-		BindingProvider bindingProvider = (BindingProvider) port;
-		Map<String, Object> requestContext = bindingProvider.getRequestContext();
-		requestContext.put(ENDPOINT_ADDRESS_PROPERTY, brokerUrl);
-		
-		port.ping("test");
-		
+	
+		brokerPort.ping("test");
 		Timer timer = new Timer(true);
 		TimerTask timerTask = new InnerClass();
-		timer.schedule(timerTask,3000); 
-	  } catch (JAXRException e) {
-		  replaceMainBroker();
-	  } 
+		timer.schedule(timerTask,3000);
+		
+       } catch(WebServiceException wse){
+    	   replaceMainBroker();
+       }
+		
   }
   
-  private void replaceMainBroker(){
-	  String brokerReplicaUrl;
-		try {
-			brokerReplicaUrl = uddiNaming.lookup("UpaBrokerReplica");
-			uddiNaming.rebind("UpaBroker", brokerReplicaUrl);
+  private void replaceMainBroker(){	
+	  try {
+			uddiNaming.rebind("UpaBroker", replicaUrl);
 		} catch (JAXRException er) {
-			System.out.println("error in lookup or rebind");
+			System.out.println("error in rebind of BrokerReplica");
+			er.printStackTrace();
 		}
   }
   
     
-  public void updateTranspots(TransportView job) { 
+  public void updateTransports(TransportView job) { 
 	  if(job.getId() != null){	
 		  for (TransportView j : contratos){
 		  	if(job.getId().equals(j.getId())) {

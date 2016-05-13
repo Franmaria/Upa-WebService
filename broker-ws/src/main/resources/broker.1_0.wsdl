@@ -155,7 +155,7 @@
             </xs:complexType>
             <xs:element name="UnknownTransportFault" type="tns:UnknownTransportFault" />
 
-            <xs:element name="updateTranspots">
+            <xs:element name="updateTransports">
             	<xs:complexType>
             		<xs:sequence>
 
@@ -166,7 +166,7 @@
             		</xs:sequence>
             	</xs:complexType>
             </xs:element>
-            <xs:element name="updateTranspotsResponse">
+            <xs:element name="updateTransportsResponse">
             	<xs:complexType>
             		<xs:sequence>
 
@@ -243,11 +243,11 @@
     </message>
 
     <!-- Port Type (Interface) -->
-    <message name="updateTranspotsRequest">
-    	<part name="parameters" element="tns:updateTranspots"></part>
+    <message name="updateTransportsRequest">
+    	<part name="parameters" element="tns:updateTransports"></part>
     </message>
-    <message name="updateTranspotsResponse">
-    	<part name="parameters" element="tns:updateTranspotsResponse"></part>
+    <message name="updateTransportsResponse">
+    	<part name="parameters" element="tns:updateTransportsResponse"></part>
     </message>
     <message name="updateClearTransportsRequest">
     	<part name="parameters" element="tns:updateClearTransports"></part>
@@ -311,9 +311,9 @@
                 wsam:Action="http://ws.broker.upa.pt/BrokerPort/clearTransportsResponse"
                 message="tns:clearTransportsResponse" />
         </operation>
-        <operation name="updateTranspots">
-        	<input message="tns:updateTranspotsRequest"></input>
-        	<output message="tns:updateTranspotsResponse"></output>
+        <operation name="updateTransports">
+        	<input message="tns:updateTransportsRequest"></input>
+        	<output message="tns:updateTransportsResponse"></output>
         </operation>
         <operation name="updateClearTransports">
         	<input message="tns:updateClearTransportsRequest"></input>
@@ -326,7 +326,7 @@
         <soap:binding transport="http://schemas.xmlsoap.org/soap/http"
             style="document" />
 
-        <operation name="updateTranspots">
+        <operation name="updateTransports">
             <soap:operation soapAction="" />
             <input>
                 <soap:body use="literal" />

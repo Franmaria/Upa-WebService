@@ -5,10 +5,8 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 
-import javax.annotation.Resource;
 import javax.jws.HandlerChain;
 import javax.jws.WebService;
-import javax.xml.ws.WebServiceContext;
 
 
 
@@ -17,12 +15,7 @@ import javax.xml.ws.WebServiceContext;
 @HandlerChain(file = "/ws-handler-chain.xml") 
 
 public class CAImpl implements CA {
-	@Resource
-	private WebServiceContext webServiceContext;
-
 	public byte[] getCertificate(String serverName) {
-		//MessageContext messageContext = webServiceContext.getMessageContext();
-		//messageContext.put(ServerHandler.PROPERTY_ORGANIZATION, serverName);
 		String certificateFilePath = "Certeficate/" + serverName + ".cer";
 		FileInputStream fis;
 		

@@ -216,7 +216,7 @@ public class TransporterPortTest {
 		List<JobView> jobs = transporter1.listJobs();
 		// TESTS
 		assertNotNull(transporter1);
-		createJob(jobs,"T1","Lisboa","Porto", "1/0", 11, JobStateView.ACCEPTED);
+		createJob(jobs,"T1","Lisboa","Porto", "1/0", 11, JobStateView.PROPOSED);
 		createJob(jobs,"T1","Lisboa","Porto", "1/1", 11, JobStateView.ACCEPTED);
 		createJob(jobs,"T1","Lisboa","Porto", "1/2", 11, JobStateView.ACCEPTED);
 
@@ -245,7 +245,7 @@ public class TransporterPortTest {
 		List<JobView> jobs = transporter1.listJobs();
 		// TESTS
 		assertNotNull(transporter1);
-		createJob(jobs, "T1","Lisboa","Porto","1/0", 11, JobStateView.REJECTED);
+		createJob(jobs, "T1","Lisboa","Porto","1/0", 11, JobStateView.PROPOSED);
 		createJob(jobs, "T1","Lisboa","Porto","1/1", 11, JobStateView.ACCEPTED);
 		createJob(jobs, "T1","Lisboa","Porto","1/2", 11, JobStateView.ACCEPTED);
 

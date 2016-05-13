@@ -32,9 +32,13 @@ public class CertCheckHandlerServer implements SOAPHandler<SOAPMessageContext> {
 		System.out.printf("%s current class %n", CLASS_NAME);
 		Boolean outbound = (Boolean) smc.get(MessageContext.MESSAGE_OUTBOUND_PROPERTY);
 		if (outbound) {
+			System.out.printf("outbound %n");
+
 // certcheckServer does nothing in outbound message - in client it should only do something in outbound message
 		} else {
+			System.out.printf("inbound %n");
 			if (TransporterMain.certMap.get("UpaBroker")!=null){
+				System.out.println("certificado ja existe");
 				// certificado já existe
 				return true;
 			}
@@ -42,7 +46,6 @@ public class CertCheckHandlerServer implements SOAPHandler<SOAPMessageContext> {
 			UDDINaming uddi=null;
 			CAClient CAcli=null;
 			System.out.println("UpaCA lookup");
-
 			try {
 				uddi = new UDDINaming("http://localhost:9090");
 				CAcli = new CAClient(uddi.lookup("UpaCA"),ServerHandler.PROPERTY_ORGANIZATION);
@@ -51,10 +54,11 @@ public class CertCheckHandlerServer implements SOAPHandler<SOAPMessageContext> {
 				throw new RuntimeException("erro com a conexao");
 			}
 			
-			byte[] result = CAcli.getCertificate("UpaBroker"); // vai sempre buscar o certificado do broker pois os transporters so comunicam com o broker
+			byte[] result = CAcli.getCertificate("UpaBroker"); 
+			// vai sempre buscar o certificado do broker pois os transporters so comunicam com o broker
 			if(result==null) {
 				System.out.println("certificate not found");
-
+				throw new RuntimeException("certificado nao encontrado impossivel gerar certificado");
 			} else {
 				System.out.println("got certificate");
 			}
@@ -79,7 +83,7 @@ public class CertCheckHandlerServer implements SOAPHandler<SOAPMessageContext> {
 			TransporterMain.certMap.put("UpaBroker", cert);
 			System.out.println("finished certCheckServer");
 
-			//System.out.printf("printing certified.. %n" + cert); // error
+			System.out.printf("printing certificate.. %n" + cert +"%n%n"); // error
 		}
 		return true;
 	}

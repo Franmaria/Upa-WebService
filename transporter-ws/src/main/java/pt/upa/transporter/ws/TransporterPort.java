@@ -79,25 +79,31 @@ public class TransporterPort implements TransporterPortType {
 			throw new BadPriceFault_Exception("Preco incorreto",p);
 		}
 		
-		if (!checkRegion(paridade, origin, 0) || !checkRegion(paridade, destination, 0)) {
-			ori = checkRegion(paridade, origin, 1);
-			dest = checkRegion(paridade, destination, 1);
-			
-			if(!ori || !dest){
-				BadLocationFault f = new BadLocationFault();
+		if(origin != null && destination != null) {	
+			if (!checkRegion(paridade, origin, 0) || !checkRegion(paridade, destination, 0)) {
+				ori = checkRegion(paridade, origin, 1);
+				dest = checkRegion(paridade, destination, 1);
 				
-				if (!ori && !dest){
-					f.setLocation(origin + " " + destination);
-				} else if(!dest) {
-					f.setLocation(destination);
-				} else {
-					f.setLocation(origin);
+				if(!ori || !dest){
+					BadLocationFault f = new BadLocationFault();
+					
+					if (!ori && !dest){
+						f.setLocation(origin + " " + destination);
+					} else if(!dest) {
+						f.setLocation(destination);
+					} else {
+						f.setLocation(origin);
+					}
+					
+					throw new BadLocationFault_Exception("Localizacao nao existe",f);
 				}
 				
-				throw new BadLocationFault_Exception("Localizacao nao existe",f);
+				return null;
 			}
-			
-			return null;
+		} else{
+			BadLocationFault f = new BadLocationFault();
+			f.setLocation("null");
+			throw new BadLocationFault_Exception("Localizacao nao existe",f);
 		}
 		
 		if(price <= 100) {
@@ -123,20 +129,27 @@ public class TransporterPort implements TransporterPortType {
 		/*Muda o estado do job e pode adiar uma task para mudar o estado ao longo do tempo*/
 		for (JobView i : jobs) {
 			if (i.getJobIdentifier().equals(id)) {
-				if(accept) {
-					Timer timer = new Timer(true);
-					Random rand = new Random();
-					long time = rand.nextInt(5000) + 1;
-					i.setJobState(JobStateView.ACCEPTED);
-					TimerTask timerTask = new InnerClass(i);
-					//running timer task as daemon thread
-					/* schedule(TimerTask task, long delay)
-					Schedules the specified task for execution after the specified delay.*/
-					timer.schedule(timerTask,time); // 1 - 5 sec
+				if(i.getJobState().equals(JobStateView.PROPOSED)){
+					if(accept) {
+						Timer timer = new Timer(true);
+						Random rand = new Random();
+						long time = rand.nextInt(5000) + 1;
+						i.setJobState(JobStateView.ACCEPTED);
+						TimerTask timerTask = new InnerClass(i);
+						//running timer task as daemon thread
+						/* schedule(TimerTask task, long delay)
+						Schedules the specified task for execution after the specified delay.*/
+						timer.schedule(timerTask,time); // 1 - 5 sec
+					} else {
+						i.setJobState(JobStateView.REJECTED);
+					}
+					return i;
 				} else {
-					i.setJobState(JobStateView.REJECTED);
+					BadJobFault bj = new BadJobFault();
+				    bj.setId("job not found");
+				    throw new BadJobFault_Exception("badJobFault",bj); 
 				}
-				return i;
+			
 			}
 		}
 		

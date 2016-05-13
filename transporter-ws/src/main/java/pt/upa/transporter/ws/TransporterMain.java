@@ -33,13 +33,14 @@ public class TransporterMain {
 		String number = args[3];
 		Certificate cert;
 		String serverName;
-;
 		String certificateFilePath;
+		
 		try {
 			serverName="UpaTransporter"+number;
 			certificateFilePath = "../keys_2016_05_06__20_39_05/"+serverName + "/"+ serverName + ".cer";
 			cert = readCertificateFile(certificateFilePath);
 			certMap.put(serverName, cert);
+			
 			serverName="ca";
 			certificateFilePath = "../keys_2016_05_06__20_39_05/"+serverName + "/"+ serverName + ".cer";
 			cert = readCertificateFile(certificateFilePath);
@@ -51,6 +52,7 @@ public class TransporterMain {
 
 		Endpoint endpoint = null;
 		UDDINaming uddiNaming = null;
+		
 		try {
 			TransporterPort port = new TransporterPort(Integer.parseInt(number));
 			endpoint = Endpoint.create(port);

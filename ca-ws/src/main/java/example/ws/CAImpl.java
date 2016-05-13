@@ -5,14 +5,24 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 
-
+import javax.annotation.Resource;
+import javax.jws.HandlerChain;
 import javax.jws.WebService;
+import javax.xml.ws.WebServiceContext;
+
+
+
 
 @WebService(endpointInterface = "example.ws.CA")
+@HandlerChain(file = "/ws-handler-chain.xml") 
+
 public class CAImpl implements CA {
+	@Resource
+	private WebServiceContext webServiceContext;
 
 	public byte[] getCertificate(String serverName) {
-		
+		//MessageContext messageContext = webServiceContext.getMessageContext();
+		//messageContext.put(ServerHandler.PROPERTY_ORGANIZATION, serverName);
 		String certificateFilePath = "Certeficate/" + serverName + ".cer";
 		FileInputStream fis;
 		
@@ -35,7 +45,7 @@ public class CAImpl implements CA {
 		try {
 			if (bis.available() > 0) {
 				Certificate cert = cf.generateCertificate(bis);
-				return cert.getEncoded();
+				return cert.getEncoded(); //TODO parse 64 function?, check if works fine
 			}
 		} catch (CertificateException | IOException e) {
 			System.err.println("error generating ceretificate");
@@ -47,6 +57,9 @@ public class CAImpl implements CA {
 			System.err.println("error closing bis or fis");
 		}
 		return null;
+	}
+	public String ping(String name) {
+		return name;
 	}
 
 }

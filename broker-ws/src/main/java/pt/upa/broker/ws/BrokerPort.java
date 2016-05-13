@@ -118,8 +118,10 @@ public class BrokerPort implements BrokerPortType {
 			JobView s;
 				
 			try {
-				ClientHandler.REQUEST_PROPERTY_ORGANIZATION = urls.get(x);
-				trans = new TransporterClient(urls.get(x));	
+				// TODO em vez de escrever diretamente para o handler criar variavel estatica em brokerApplication
+				// e em broker application enviar para handler
+				String nome = "UpaTransporter" + x;
+				trans = new TransporterClient(urls.get(x),nome);	
 				s = trans.requestJob(origin, destination, price);
 	   
 				if(s != null) {	
@@ -160,7 +162,7 @@ public class BrokerPort implements BrokerPortType {
     
 	if(job.getTransporterCompany() != null) { // verifica se existe uma transportadora no job pois so lhe e atribuida uma companhia se houver uma proposta que pode ser aceite
     	
-    	trans = new TransporterClient(url);
+    	trans = new TransporterClient(url,job.getTransporterCompany());
     	
     	try {
     		trans.decideJob(job.getId(), true);
@@ -200,10 +202,9 @@ public class BrokerPort implements BrokerPortType {
 		for(TransportView y : contratos){ 
 					
 			if (id.equals(y.getId())){
-				
 				try {
 					if(!y.getState().equals(TransportStateView.FAILED)) {
-						trans = new TransporterClient(uddiNaming.lookup(y.getTransporterCompany()));
+						trans = new TransporterClient(uddiNaming.lookup(y.getTransporterCompany()),y.getTransporterCompany());
 						String v = trans.jobStatus(id).getJobState().value(); 
 						if(v.equals("ACCEPTED")) {
 							y.setState(TransportStateView.BOOKED);
@@ -240,17 +241,18 @@ public class BrokerPort implements BrokerPortType {
 	  /*cleaTransports e um metodo auxiliar que "apaga" a lista de trabalhos e pede as transportadoras para fazer o mesmo*/
 	contratos = new ArrayList<TransportView>();
 	
-	List<String> urls; 
+	List<String> urls;
 	TransporterClient trans; 
 	
 	try {
 		urls = new ArrayList<String>(uddiNaming.list("UpaTransporter%"));
 		
-		for(String i : urls) {
+		for(int i=0; i<urls.size();i++) {
 			try {
-				trans = new TransporterClient(i);
+				String nome = "UpaTransporter" + i;
+				trans = new TransporterClient(urls.get(i),nome);
 				trans.clearJobs();
-			} catch(Exception e){
+			} catch(Exception e) {
 				System.out.printf("Caught exception: %s%n", e);
 				e.printStackTrace();
 				continue;

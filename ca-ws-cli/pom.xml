@@ -56,7 +56,7 @@
         <ws.url>http://localhost:8079/ca-ws/endpoint</ws.url>
         <wsdl.url>${ws.url}?WSDL</wsdl.url>
 
-        <mainclass>example.ws.cli.CAClientApplication</mainclass>
+        <mainclass>example.ws.CAClientApplication</mainclass>
 
         <uddi.url>http://localhost:9090</uddi.url>
         <ws.name>UpaCA</ws.name>

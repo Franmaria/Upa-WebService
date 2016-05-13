@@ -1,10 +1,8 @@
 package pt.upa.transporter.ws.handler;
 
-import java.awt.List;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.security.Certificate;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -12,10 +10,18 @@ import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Signature;
 import java.security.SignatureException;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Set;
+import static javax.xml.bind.DatatypeConverter.parseBase64Binary;
+import static javax.xml.bind.DatatypeConverter.printBase64Binary;
+
+import static javax.xml.bind.DatatypeConverter.printHexBinary;
+
+import javax.xml.ws.handler.MessageContext;
+
+import pt.upa.transporter.ws.TransporterMain;
 
 import javax.xml.soap.SOAPBody;
 import javax.xml.namespace.QName;
@@ -27,13 +33,9 @@ import javax.xml.soap.SOAPHeader;
 import javax.xml.soap.SOAPHeaderElement;
 import javax.xml.soap.SOAPMessage;
 import javax.xml.soap.SOAPPart;
-import javax.xml.ws.handler.MessageContext;
-import javax.xml.ws.handler.MessageContext.Scope;
 import javax.xml.ws.handler.soap.SOAPHandler;
 import javax.xml.ws.handler.soap.SOAPMessageContext;
 
-import static javax.xml.bind.DatatypeConverter.parseBase64Binary;
-import static javax.xml.bind.DatatypeConverter.printBase64Binary;
 
 
 public class ServerHandler implements SOAPHandler<SOAPMessageContext> {
@@ -43,61 +45,39 @@ public class ServerHandler implements SOAPHandler<SOAPMessageContext> {
 	// CA manipula esta propriedade para o handler ter o certificado apenas uma vez
 	
 	// field with requested organization "parameter from non-handler code"
-	public static final String REQUEST_PROPERTY_ORGANIZATION="";
-	public static final String RESPONSE_PROPERTY_ORGANIZATION=""; // should hold name of the current organization, for private own certificate path
-	public static final String REQUEST_HEADER_ORGANIZATION = "org";
-	public static final String REQUEST_NS_ORGANIZATION = "urn:requestedOrg";
-	public static final String RESPONSE_HEADER_ORGANIZATION = "org";
-	public static final String RESPONSE_NS_ORGANIZATION = REQUEST_NS_ORGANIZATION;
+	public static String PROPERTY_ORGANIZATION=""; // should hold name of the current organization, for private own certificate path
 
 	public static final String REQUEST_HEADER_NONCE = "nonce";
 	public static final String REQUEST_NS_NONCE = "nonce";
 	public static final String RESPONSE_HEADER_NONCE = "nonce";
 	public static final String RESPONSE_NS_NONCE = REQUEST_NS_NONCE;
 	
-	
-	public static final String REQUEST_PROPERTY_DIGSIG = "";
-	public static final String RESPONSE_PROPERTY_DIGSIG = "";
-	public static final String REQUEST_HEADER_DIGSIG = "digitalSig";
+	public static final String REQUEST_HEADER_DIGSIG = "digitalSignature";
 	public static final String REQUEST_NS_DIGSIG = "urn:digSig";
-	public static final String RESPONSE_HEADER_DIGSIG = "digitalSigResponse";
+	public static final String RESPONSE_HEADER_DIGSIG = "digitalSignature";
 	public static final String RESPONSE_NS_DIGSIG = REQUEST_NS_DIGSIG;
 	
-	ArrayList<byte[]> nonceList= new ArrayList<byte[]>();
+	public static String FOREIGN_ORG_PROPERTY = "";
+	public static final String HEADER_ORG = "org";
+	public static final String REQUEST_NS_ORG = "urn:org";
+	public static final String RESPONSE_NS_ORG = REQUEST_NS_ORG;
 	
 	public static final String CLASS_NAME = ServerHandler.class.getSimpleName();
-	public static final String TOKEN = "server-handler";
-	
-	final static String CERTIFICATE_FILE = "example.cer";
 
-	final static String KEYSTORE_FILE = "keystore.jks";
-	final static String KEYSTORE_PASSWORD = "1nsecure";
-
-	final static String KEY_ALIAS = "example";
-	final static String KEY_PASSWORD = "ins3cur3";
-	
 	public static Certificate cert=null;
 	public static PublicKey publicKey=null;
 	public static PrivateKey privateKey=null;
 	String digSigValue=null;
-
-	//TODO change absolute paths
-
 	
 	// returns true to continue processing the next handler, false otherwise
 	@Override
 	public boolean handleMessage(SOAPMessageContext smc) {
 		Boolean outbound = (Boolean) smc.get(MessageContext.MESSAGE_OUTBOUND_PROPERTY);
+		System.out.printf("%s current class %n", CLASS_NAME);
+		System.out.printf("organizacao: %s %n", PROPERTY_ORGANIZATION);
+
 		if (outbound) {
-			
 			// outbound message
-
-			// get token from response context
-			// TODO check following lines output, delete when no longer needed, testing purposes only
-			String propertyValue = (String) smc.get(RESPONSE_PROPERTY_DIGSIG); 
-			System.out.printf("%s received '%s'%n", CLASS_NAME, propertyValue);
-
-			// put token in response SOAP header
 			try {
 				// get SOAP envelope
 				SOAPMessage msg = smc.getMessage();
@@ -107,18 +87,20 @@ public class ServerHandler implements SOAPHandler<SOAPMessageContext> {
 				SOAPHeader sh = se.getHeader();
 				if (sh == null)
 					sh = se.addHeader();
+				
 				// gets text to make digital signature
-				String bodyValue=null;
+				String bodyValue="";
 				SOAPBody soapBody= se.getBody();
-				Iterator it2 = soapBody.getChildElements();
-	            while(it2.hasNext()) {
-	                SOAPElement tempElement = (SOAPElement) it2.next();
-	                bodyValue +=  tempElement.getValue();
-	            }
+				Iterator<?> it2 = soapBody.getChildElements();
+				bodyValue=getFullBody(it2,bodyValue);
 	            System.out.printf("%n outgoing message body element%n %s%n", bodyValue);
 	            
-	            //nonces insertion into soap
+	            Name name3=se.createName(HEADER_ORG,"org",RESPONSE_NS_ORG);
+	            SOAPHeaderElement element3 = sh.addHeaderElement(name3);
+	            element3.addTextNode(PROPERTY_ORGANIZATION);
 	            
+
+	            //nonces insertion into soap
 	            Name name2 = se.createName(RESPONSE_HEADER_NONCE, "nonce",RESPONSE_NS_NONCE);
 	            SOAPHeaderElement element2 = sh.addHeaderElement(name2);
 	            SecureRandom random = null;
@@ -127,53 +109,44 @@ public class ServerHandler implements SOAPHandler<SOAPMessageContext> {
 				} catch (NoSuchAlgorithmException e1) {
 		    		System.out.println("wrong algorithm");
 				}
-	    		System.out.println("random's information: "+random.getProvider().getInfo());
+	    		//System.out.println("random's information: "+random.getProvider().getInfo());
 
 	    		System.out.println("Generating random byte array ...");
 
 	    		final byte array[] = new byte[16];
-	    		random.nextBytes(array); // random num in "array"
-	            element2.addTextNode(array.toString());
+	    		random.nextBytes(array);
+	            element2.addTextNode(printBase64Binary(array));
+	            System.out.printf("%n element2Value: %s%n",element2.getValue());
 	            
-				// add header element (name, namespace prefix, namespace)
+	            
+	            //DIGSIG
 				Name name = se.createName(RESPONSE_HEADER_DIGSIG, "digS", RESPONSE_NS_DIGSIG);
 				SOAPHeaderElement element = sh.addHeaderElement(name);
-				Iterator it = sh.getChildElements(name);
-				
-				if (it.hasNext()) {
-					SOAPElement digSigElement = (SOAPElement) it.next();
-					// get header element value
-					digSigValue = digSigElement.getValue();
-					System.out.printf("%s %s should print header digSig'%s'%n", CLASS_NAME,"debug digSig", digSigValue);
-				} else {
-					System.out.printf("Header element %s not found in outgoing message%n", RESPONSE_HEADER_DIGSIG);
-					return false;
-				}
+
 
 				// add header element value
 				String newValue=null;
 				try {
-					cert = readCertificateFile("../keys_2016_05_06__20_39_05/" + RESPONSE_PROPERTY_ORGANIZATION+ "/"+ "RESPONSE_PROPERTY_ORGANIZATION"+".cer");
-					
-					//TODO check path and everything else
-					String KEYSTORE_FILE = "../keys_2016_05_06__20_39_05/" + RESPONSE_PROPERTY_ORGANIZATION + "/"+RESPONSE_PROPERTY_ORGANIZATION+".jks";
-					String KEYSTORE_PASSWORD = "1nsecure";
-					String KEY_ALIAS = RESPONSE_PROPERTY_ORGANIZATION;
-					String KEY_PASSWORD = "ins3cur3";
+					String KEYSTORE_FILE = "../keys_2016_05_06__20_39_05/" + PROPERTY_ORGANIZATION + "/"+PROPERTY_ORGANIZATION+".jks";
+					String KEYSTORE_PASSWORD = "ins3cur3";
+					String KEY_ALIAS = PROPERTY_ORGANIZATION;
+					String KEY_PASSWORD = "1nsecure";
 					
 					privateKey= getPrivateKeyFromKeystore(KEYSTORE_FILE, KEYSTORE_PASSWORD.toCharArray(), KEY_ALIAS, KEY_PASSWORD.toCharArray());
-					newValue = makeDigitalSignature(bodyValue.getBytes(), privateKey).toString(); // toString to add SOAP
+					newValue = printBase64Binary(makeDigitalSignature(parseBase64Binary(bodyValue), privateKey)); 
 				} catch (Exception e) {
-					System.out.printf("n consegue ler certificado");
+					System.out.printf("erro ao ler keystore ou ler certificado");
 					e.printStackTrace();
-					return false;
+					throw new RuntimeException("erro ao ler certificado ou utilizar private key de keystore ao criar digSig ");
 				}
 				element.addTextNode(newValue);
 
-				System.out.printf("%s put token '%s' on response message header%n", CLASS_NAME, TOKEN);
-
+				System.out.printf(" digSig:%n '%s' %n", element.getValue());
+				System.out.println();
+				
 			} catch (SOAPException e) {
 				System.out.printf("Failed to add SOAP header because of %s%n", e);
+				throw new RuntimeException("excecao SOAP falhou a adicionar header");
 			}
 
 			
@@ -191,12 +164,26 @@ public class ServerHandler implements SOAPHandler<SOAPMessageContext> {
 				// check header
 				if (sh == null) {
 					System.out.println("Header not found.");
-					return true;
+					throw new RuntimeException("soap header n foi encontrado");
 				}
+
+				Name name4 = se.createName(HEADER_ORG, "org", RESPONSE_NS_ORG);
+				Iterator<?> it4 = sh.getChildElements(name4);
+				
+				String foreignOrg =null;
+				SOAPElement orgElement=null;
+				if (it4.hasNext()) {
+					orgElement = (SOAPElement) it4.next();
+					foreignOrg = orgElement.getValue();
+				System.out.printf("%s %s%n","debug foreignOrg:", foreignOrg);
+				} else {
+					System.out.printf("Header element %s not found%n", HEADER_ORG);
+					throw new RuntimeException("foreign org header n foi encontrado");
+				}
+				FOREIGN_ORG_PROPERTY=foreignOrg;
 				
 				Name name3 = se.createName(REQUEST_HEADER_NONCE, "nonce", REQUEST_NS_NONCE);
-				Iterator it3 = sh.getChildElements(name3);
-				// check header element
+				Iterator<?> it3 = sh.getChildElements(name3);
 				
 				// check for certified
 				String nonceValue =null;
@@ -205,34 +192,27 @@ public class ServerHandler implements SOAPHandler<SOAPMessageContext> {
 				nonceElement = (SOAPElement) it3.next();
 				// get header element value
 				nonceValue = nonceElement.getValue();
-				System.out.printf("%s %s should print header digSig'%s'%n", CLASS_NAME,"debug nonce", nonceValue);
+				System.out.printf("%s %s%n","debug nonce", nonceValue);
 				} else {
 					System.out.printf("Header element %s not found invalid signature.%n", REQUEST_HEADER_NONCE);
-					return true;
+					throw new RuntimeException("nonce header n foi encontrado");
 				}
-				if(nonceList.contains(nonceValue.getBytes())) {
+				if(TransporterMain.nonceList.contains(parseBase64Binary(nonceValue))) {
 					System.out.printf("nonce already present, replayed message%n", REQUEST_HEADER_NONCE);
-					return true;
+					throw new RuntimeException("mensagem repetida, verificado em nonce list");
 				}
-				nonceList.add(nonceValue.getBytes());
+				TransporterMain.nonceList.add(parseBase64Binary(nonceValue));
 
 				// gets text to compare to digital signature
-				String bodyValue=null;
+				String bodyValue="";
 				SOAPBody soapBody= se.getBody();
-				Iterator it2 = soapBody.getChildElements();
-	            while(it2.hasNext()) {
-	                SOAPElement tempElement = (SOAPElement) it2.next();
-	                bodyValue +=  tempElement.getValue();
-	            }
+				Iterator<?> it2 = soapBody.getChildElements();
+				bodyValue=getFullBody(it2,bodyValue);
 	            System.out.printf("%n body element%n %s%n", bodyValue);
-				
-				
-				
+	            
 				// DIGITAL SIGNATURE
-				
 				Name name = se.createName(REQUEST_HEADER_DIGSIG, "digS", REQUEST_NS_DIGSIG);
-				Iterator it = sh.getChildElements(name);
-				// check header element
+				Iterator<?> it = sh.getChildElements(name);
 				
 				// check for certified
 				if (it.hasNext()) {
@@ -243,34 +223,38 @@ public class ServerHandler implements SOAPHandler<SOAPMessageContext> {
 				System.out.printf("%s %s should print header digSig'%s'%n", CLASS_NAME,"debug digSig", digSigValue);
 				} else {
 					System.out.printf("Header element %s not found invalid signature.%n", REQUEST_HEADER_DIGSIG);
-					return true;
+					throw new RuntimeException("digSig header n encontrado");
 				}
-				
-				cert=CertCheckHandlerServer.certMap.get(REQUEST_PROPERTY_ORGANIZATION); // static map
+				cert=TransporterMain.certMap.get(FOREIGN_ORG_PROPERTY); // static map
 				if (cert == null) {
 					System.out.printf("requested organization not found %n");
-					return true;
+					throw new RuntimeException("certificado da organizacao n encontrado no mapa de certificados do transporter main");
 				}
 				// public key
 				publicKey = getPublicKeyFromCertificate(cert);
 				boolean digSigVerify = false;
-				byte[] cipheredSig = digSigValue.getBytes(); //temporary value
-				byte[] result = bodyValue.getBytes();
+				byte[] cipheredSig = parseBase64Binary(digSigValue); //temporary value
+				System.out.printf("%n ciphered signature: %s%n%n",printHexBinary(cipheredSig));
+
+				byte[] result = parseBase64Binary(bodyValue);
+				//System.out.printf("text bytes: %s%n",printHexBinary(result));
+
 				try {
 					// compares ciphered digested message with soap body message
 					digSigVerify = verifyDigitalSignature(cipheredSig, result, publicKey);
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
+					throw new RuntimeException("erro ao verificar assinatura");
 				}
 				if (!digSigVerify) {
-					//TODO check what else to do here
-					System.out.printf("wrong digital signature after verification %n");
-					return false;
+					System.out.printf("%n %n wrong digital signature after verification %n %n");
+					throw new RuntimeException("confirmada assinatura errada depois de verificar");
 				}
-		
+				System.out.println("digSig verified!%n"); //TODO fix same prob in client handler incoming
+
 			} catch (SOAPException e) {
 				System.out.printf("Failed to get SOAP header because of %s%n", e);
+				throw new RuntimeException("sem soap headers");
 			}
 
 		}
@@ -279,8 +263,9 @@ public class ServerHandler implements SOAPHandler<SOAPMessageContext> {
 
 	@Override
 	public boolean handleFault(SOAPMessageContext context) {
-		// TODO Auto-generated method stub
-		return false;
+		// n devera ser utilizado
+		System.out.printf("%s current class %n", CLASS_NAME);
+		throw new RuntimeException("from: handle fault: erro no server handler");
 	}
 
 	@Override
@@ -318,6 +303,9 @@ public class ServerHandler implements SOAPHandler<SOAPMessageContext> {
 		Signature sig = Signature.getInstance("SHA1WithRSA");
 		sig.initVerify(publicKey);
 		sig.update(bytes);
+		System.out.printf("text bytes insides verifyDigSig method: %s%n",printHexBinary(bytes));
+
+		
 		try {
 			return sig.verify(cipherDigest);
 		} catch (SignatureException se) {
@@ -393,6 +381,18 @@ public class ServerHandler implements SOAPHandler<SOAPMessageContext> {
 		KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
 		keystore.load(fis, keyStorePassword);
 		return keystore;
+	}
+		public String getFullBody(Iterator<?> it,String result) {
+		
+		while(it.hasNext()) {
+            SOAPElement tempElement = (SOAPElement) it.next();
+            if(tempElement.getValue()==null) {
+            	result+=getFullBody(tempElement.getChildElements(),result);
+            } else {
+            	result += tempElement.getValue();
+            }
+        }
+		return result;
 	}
 
 }

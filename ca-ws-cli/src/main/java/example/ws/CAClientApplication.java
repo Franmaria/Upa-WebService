@@ -1,15 +1,6 @@
 package example.ws;
 
-import static javax.xml.ws.BindingProvider.ENDPOINT_ADDRESS_PROPERTY;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.security.cert.CertificateFactory;
-import java.security.cert.Certificate;
-import java.util.Map;
-import javax.xml.ws.BindingProvider;
-
-import example.ws.*;
 import example.ws.cli.CAClient;
 
 // classes generated from WSDL
@@ -42,36 +33,14 @@ public class CAClientApplication {
 			System.out.printf("Found %s%n", endpointAddress);
 		}
 		System.out.println("Creating stub ...");
-
-		CAImplService service = new CAImplService();
-		CA port = service.getCAImplPort();
+		CAClient CAcli = new CAClient(endpointAddress,"ca");
 		
-		System.out.println("Setting endpoint address ...");
-		BindingProvider bindingProvider = (BindingProvider) port;
-		Map<String, Object> requestContext = bindingProvider.getRequestContext();
-		requestContext.put(ENDPOINT_ADDRESS_PROPERTY, endpointAddress);
-
-		/* test
-		CAImplService service = new CAImplService();
-		CA port = service.getCAImplPort();
-
 		System.out.println("Remote call ...");
-		
-		//o certificado vem em byte[]
-		byte[] result = port.getCertificate("UpaBroker");
-		//tem que se construir uma fabrica para criar o certeficado outra vez e depois poder usa-lo 
-		CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
-		InputStream in = new ByteArrayInputStream(result);
-		Certificate cert = (Certificate)certFactory.generateCertificate(in);
-		
-		//serve para ver se tudo correu bem ou nao 
-		if(cert == null){
-			System.out.println("null");
-		}
-		System.out.println(cert.toString());
-		*/
-	}
-	
-	
+		try {
+			System.out.printf("ping francisco: %s%n", CAcli.ping("francisco"));
+		} catch(Exception e) {
+			System.out.println("caught exception");
 
+		}
+	}
 }

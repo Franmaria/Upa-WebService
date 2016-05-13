@@ -8,5 +8,5 @@ import javax.jws.WebService;
 public interface CA {
 
 	byte[] getCertificate(String name);
-
+	String ping(String name);
 }

@@ -1,13 +1,8 @@
 package pt.upa.transporter;
 
-import static javax.xml.ws.BindingProvider.ENDPOINT_ADDRESS_PROPERTY;
-
-import java.util.Map;
-
-import javax.xml.ws.BindingProvider;
 
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
-import pt.upa.transporter.ws.*;
+import pt.upa.transporter.ws.cli.TransporterClient;
 
 public class TransporterClientApplication {
 
@@ -35,13 +30,24 @@ public class TransporterClientApplication {
 		}
 
 		System.out.println("Creating stub ...");
+		/*
 		TransporterService service = new TransporterService();
 		TransporterPortType port = service.getTransporterPort();
 		
 		System.out.println("Setting endpoint address ...");
 		BindingProvider bindingProvider = (BindingProvider) port;
 		Map<String, Object> requestContext = bindingProvider.getRequestContext();
-		requestContext.put(ENDPOINT_ADDRESS_PROPERTY, endpointAddress);
+		
+		requestContext.put(ENDPOIsNT_ADDRESS_PROPERTY, endpointAddress);
+		// extra property
+		requestContext.put(CertCheckHandlerClient.PROPERTY, "handlers TransportApp 1");
+		*/
+		TransporterClient trans = new TransporterClient(endpointAddress,"UpaTransporter1");
+		//TODO apagar testes
+		System.out.println("ping");
+		String a = trans.ping("francisco");
+		System.out.printf("ping done answer:%s%n", a);
+
 	
 	}
 }

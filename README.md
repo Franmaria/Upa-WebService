@@ -10,7 +10,7 @@ Francisco Maria 81965 fran6maria@gmail.com
 Ostap Kozak 82535 ostap_95@hotmail.com
 
 Repositório:
-[tecnico-distsys/T_60-project](https://github.com/tecnico-distsys/T_60-project/)
+https://github.com/danielreis1/Upa-WebService.git
 
 -------------------------------------------------------------------------------
 
@@ -35,16 +35,14 @@ juddi/bin/startup.sh
 [2] Criar pasta temporária
 
 ```
-mkdir t60
-cd t60
+mkdir upa
+cd upa
 
 ```
 
 
-[3] Obter código fonte do projeto (versão entregue)
-
-```
-git clone -b SD_R2 https://github.com/tecnico-softeng-distsys-2015/T_60-project.git 
+[3] Obter código
+git clone https://github.com/danielreis1/Upa-WebService.git 
 
 ```
 

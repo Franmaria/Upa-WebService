@@ -10,7 +10,7 @@ Francisco Maria 81965 fran6maria@gmail.com
 Ostap Kozak 82535 ostap_95@hotmail.com
 
 Repositório:
-https://github.com/danielreis1/Upa-WebService.git
+https://github.com/Franmaria/Upa-WebService.git
 
 -------------------------------------------------------------------------------
 
